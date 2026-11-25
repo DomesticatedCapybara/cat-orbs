@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="theme-color" content="#1d2027">
-<title>Cat Orbs: King of the Hill v1.4</title>
+<title>Cat Orbs: Conquerors of Cat Earth v1.4</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
@@ -88,8 +88,9 @@ button:focus-visible,input:focus-visible{outline:3px solid #2f8cff;outline-offse
 .medal.gold{background:radial-gradient(circle at 35% 30%,#ffe9a3,#e0a82e)}.medal.silver{background:radial-gradient(circle at 35% 30%,#f4f6f8,#9aa3ad)}.medal.bronze{background:radial-gradient(circle at 35% 30%,#f2c49b,#b06a33)}
 #endText{white-space:pre-line}
 #sndBtn{position:absolute;left:calc(12px + var(--sl));top:calc(112px + var(--st));z-index:3;font:700 13px "Baloo 2",sans-serif;color:var(--cream);background:var(--panel);border:0;border-radius:999px;padding:6px 12px;min-height:34px;cursor:pointer;display:none}
-body.playing #sndBtn{display:block}
-body.phone #sndBtn{top:calc(92px + var(--st))}
+body.playing #sndBtn,body.playing #musBtn{display:block}
+#musBtn{position:absolute;left:calc(122px + var(--sl));top:calc(112px + var(--st));z-index:3;font:700 13px "Baloo 2",sans-serif;color:var(--cream);background:var(--panel);border:0;border-radius:999px;padding:6px 12px;min-height:34px;cursor:pointer;display:none}
+body.phone #sndBtn,body.phone #musBtn{top:calc(92px + var(--st))}
 #pauseBtn{position:absolute;left:50%;top:calc(12px + var(--st));transform:translateX(-50%);z-index:3;width:44px;height:44px;border-radius:50%;border:0;background:var(--panel);display:none;align-items:center;justify-content:center;gap:5px;cursor:pointer}
 #pauseBtn i{display:block;width:5px;height:16px;border-radius:2px;background:var(--cream)}
 body.playing #pauseBtn{display:flex}
@@ -139,6 +140,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
 <div id="combo"></div>
 <div id="count"></div>
 <button id="sndBtn" type="button">Sound: on</button>
+<button id="musBtn" type="button">Music: on</button>
 <button id="pauseBtn" type="button" aria-label="Pause"><i></i><i></i></button>
 </div>
 <div id="frameTag" hidden>Previewing the iPhone Duo (open) screen, 1.41 : 1</div>
@@ -148,14 +150,14 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
   <div class="card">
     <noscript><style>.card>*:not(noscript){display:none!important}</style>
       <div class="nojs">
-        <h1>Cat Orbs: <em>King of the Hill</em></h1>
+        <h1>Cat Orbs: <em>Conquerors of Cat Earth</em></h1>
         <p><b>This preview can't run games.</b> iMessage and Files show HTML files in a quick preview that turns games off.</p>
         <p>To play on iPhone, open the game's <b>web link</b> in <b>Safari</b>. Ask whoever sent you this file for the link.</p>
         <p style="font-size:13px;opacity:.6">Version 1.4</p>
       </div>
     </noscript>
-    <h1>Cat Orbs: <em>King of the Hill</em></h1>
-    <p>Prowl the city, gobble treats and absorb every cat smaller than you. Only one orb can remain.</p>
+    <h1>Cat Orbs: <em>Conquerors of Cat Earth</em></h1>
+    <p>Prowl the city, gobble treats and absorb every cat smaller than you. Only one orb can conquer Cat Earth.</p>
     <details>
       <summary>How to play</summary>
       <ul>
@@ -167,13 +169,13 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
         <li>Start on treats, then grow big enough to swallow bins, trees, cars, fountains and finally whole buildings. Anything with a <b style="color:#2e9a6b">green outline</b> is small enough for you to eat</li>
         <li><b>Solo: Grow Rush</b> has no rival cats. Race the clock to size 1000 on <b>today's city</b>, the same layout for everyone that day. Earn bronze, silver or gold, and copy your result to share</li>
         <li>The whole island city is open. When only 5 cats are left, a final circle slowly closes in</li>
-        <li>Sound can be switched off from the start screen or the in-game button. On iPhone, the ring/silent switch may also mute it</li>
+        <li>Music and sound effects each have their own on/off switch, on the start screen and in game. Menu music starts after your first tap. On iPhone, the ring/silent switch may also mute it</li>
         <li>Small cats turn and accelerate faster, so dodge rather than run. Big cats dash further and pull small items in</li>
         <li>Arrows at the screen edge point to nearby cats off-screen: <b style="color:#d9493a">red</b> can eat you, <b style="color:#2e9a6b">green</b> you can eat. In Grow Rush a <b style="color:#b8862b">gold</b> arrow points to a big tasty target</li>
         <li>Eat things in quick succession to build a <b>combo</b> of up to ×1.5 extra growth</li>
         <li>Every match starts with a 3-second countdown. In King of the Hill, rivals leave you alone for the first 10 seconds (a blue ring shows you're protected)</li>
         <li>Tap the pause button at the top (or press <span class="key">P</span>). The game also pauses itself if you switch apps</li>
-        <li>The last cat standing swells to fill the whole city</li>
+        <li>The last cat standing swells to fill the whole city… and then the whole of Cat Earth</li>
         <li>Unlock new cat colors by playing, absorbing cats and winning</li>
       </ul>
     </details>
@@ -188,7 +190,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
     <div class="lbl">Cat color <span id="unlCount" style="font-weight:500;opacity:.7"></span></div>
     <div id="furs"></div>
     <p id="furNote"></p>
-    <div class="btns" style="margin-top:8px"><button type="button" class="big alt" id="sndMenu" style="font-size:15px;min-height:40px;padding:6px 18px">Sound: on</button></div>
+    <div class="btns" style="margin-top:8px"><button type="button" class="big alt" id="sndMenu" style="font-size:15px;min-height:40px;padding:6px 18px">Sound: on</button><button type="button" class="big alt" id="musMenu" style="font-size:15px;min-height:40px;padding:6px 18px">Music: on</button></div>
     <div class="lbl">Device</div>
     <div class="seg" role="radiogroup" aria-label="Device">
       <label><input type="radio" name="dev" value="auto"><span>Auto</span></label>
@@ -340,7 +342,7 @@ function placeFood(T){
   return{x:best.x,y:best.y,T,r:T.r,v:T.v,rot:Math.random()*7,ph:Math.random()*7,hue:Math.floor(Math.random()*3)};}
 const CAR_S=1.45; // cars are drawn and sized this much bigger than the original sprite
 const START_R=22,AI_COUNT=45,SPAWN_EDGE=300;
-const COUNTDOWN=3,GRACE=10; // seconds of countdown before play; seconds rivals leave you alone after Go
+const COUNTDOWN=3,GRACE=10,FIN_CITY=4.5,FIN_EARTH=6; // finale: seconds to fill the city, then to swallow Cat Earth // seconds of countdown before play; seconds rivals leave you alone after Go
 const dailySeed=()=>{const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();};
 // Solo: Grow Rush - no rival cats; race the clock to this size
 const SOLO_GOAL=1000,GOLD_T=90,SILVER_T=120,BRONZE_T=180;
@@ -464,7 +466,7 @@ function buildProps(){props=[];pgrid=new Map();propEaten=[];
     if(q.k==='car'){let clash=false;eachProp(q.x-60,q.y-60,q.x+60,q.y+60,o=>{if(o.k==='car'&&Math.hypot(o.x-q.x,o.y-q.y)<19*CAR_S*2+4)clash=true;});if(clash)continue;}
     props.push(q);const k=gkey(q.x,q.y);if(!pgrid.has(k))pgrid.set(k,[]);pgrid.get(k).push(q);}}
 function eachProp(x0,y0,x1,y1,fn){
-  for(let gi=Math.floor(x0/CELL);gi<=Math.floor(x1/CELL);gi++)for(let gj=Math.floor(y0/CELL);gj<=Math.floor(y1/CELL);gj++){
+  for(let gi=Math.max(BMIN-1,Math.floor(x0/CELL));gi<=Math.min(BMAX+1,Math.floor(x1/CELL));gi++)for(let gj=Math.max(BMIN-1,Math.floor(y0/CELL));gj<=Math.min(BMAX+1,Math.floor(y1/CELL));gj++){
     const a=pgrid.get((gi+50)*1000+(gj+50));if(a)for(const p of a)if(p.alive)fn(p);}}
 function tree(g,x,y,r){circ(g,x+r*.3,y+r*.35,r,'rgba(0,0,0,.3)');circ(g,x,y,r,'#2e6a38');circ(g,x-r*.25,y-r*.25,r*.6,'#4f9a58');}
 function car(g,x,y,vert,col){g.save();g.translate(x,y);if(vert)g.rotate(Math.PI/2);g.scale(CAR_S,CAR_S);
@@ -525,8 +527,44 @@ function getChunk(t,cx,cy,make){const key=t+':'+cx+':'+cy;let c=chunks.get(key);
   chunks.set(key,c);chunkPx+=px*px;
   while(chunkPx>(phone?(chunkFail?3e6:7e6):28e6)&&chunks.size>1){const[k0,c0]=chunks.entries().next().value;chunks.delete(k0);chunkPx-=c0.width*c0.height;c0.width=c0.height=0;}
   return c;}
+// Cat Earth: the island city is a speck on a planet, revealed when the winner keeps growing
+const PLANET_R=42000,STARS_BG=Array.from({length:140},()=>[Math.random(),Math.random(),Math.random()*1.6+.4,Math.random()]);
+const LAND='#5d9e55',BEACH='#d8c48e';
+function land(g,draw){g.fillStyle=BEACH;draw(1.06);g.fill();g.fillStyle=LAND;draw(1);g.fill();}
+function drawEarth(z,vl,vt,vw,vh){
+  if(vw<PLANET_R*.15)return; // only matters once the camera has pulled far back
+  const g=ctx;
+  // stars, in screen space
+  g.save();g.setTransform(DPR,0,0,DPR,0,0);for(const[x,y,r,t]of STARS_BG){g.globalAlpha=.4+.5*Math.abs(Math.sin(clock*1.3+t*9));circ(g,x*W,y*H,r,'#fff');}g.restore();g.globalAlpha=1;
+  const atm=g.createRadialGradient(0,0,PLANET_R*.97,0,0,PLANET_R*1.08);atm.addColorStop(0,'rgba(120,200,255,.55)');atm.addColorStop(1,'rgba(120,200,255,0)');
+  g.fillStyle=atm;g.beginPath();g.arc(0,0,PLANET_R*1.08,0,7);g.fill();
+  const oc=g.createRadialGradient(-PLANET_R*.35,-PLANET_R*.35,PLANET_R*.1,0,0,PLANET_R);oc.addColorStop(0,'#2f7fae');oc.addColorStop(1,'#163c5a');
+  g.fillStyle=oc;g.beginPath();g.arc(0,0,PLANET_R,0,7);g.fill();
+  g.save();g.beginPath();g.arc(0,0,PLANET_R,0,7);g.clip();
+  // a continent shaped like a cat's head, with lakes for eyes
+  const hx=-17000,hy=-9000,hr=8000;
+  land(g,k=>{g.beginPath();g.arc(hx,hy,hr*k,0,7);g.moveTo(hx-hr*.85*k,hy-hr*.35);g.lineTo(hx-hr*.62,hy-hr*1.45*k);g.lineTo(hx-hr*.1*k,hy-hr*.9);
+    g.moveTo(hx+hr*.85*k,hy-hr*.35);g.lineTo(hx+hr*.62,hy-hr*1.45*k);g.lineTo(hx+hr*.1*k,hy-hr*.9);});
+  for(const sx of[-1,1]){g.fillStyle='#3c8fb8';g.beginPath();g.ellipse(hx+sx*hr*.35,hy-hr*.05,hr*.14,hr*.2,0,0,7);g.fill();}
+  g.fillStyle='#8a6a4a';g.beginPath();g.moveTo(hx-hr*.08,hy+hr*.2);g.lineTo(hx+hr*.08,hy+hr*.2);g.lineTo(hx,hy+hr*.32);g.closePath();g.fill();
+  // a paw-print archipelago
+  const px=16000,py=13000;land(g,k=>{g.beginPath();g.ellipse(px,py,3800*k,3100*k,0,0,7);for(const[a,b]of[[-3900,-3600],[-1350,-5200],[1350,-5200],[3900,-3600]]){g.moveTo(px+a+1500*k,py+b);g.arc(px+a,py+b,1500*k,0,7);}});
+  // a fish-shaped continent
+  const fx=15500,fy=-15500;land(g,k=>{g.beginPath();g.ellipse(fx,fy,7200*k,3300*k,-.4,0,7);g.moveTo(fx+5200,fy-3300);g.lineTo(fx+10200*k,fy-7600*k);g.lineTo(fx+8200*k,fy+400*k);g.closePath();});
+  // a yarn-ball island
+  const yx=-13000,yy=19000;land(g,k=>{g.beginPath();g.arc(yx,yy,4300*k,0,7);});
+  g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=260;for(const q of[.3,.6,.9]){g.beginPath();g.ellipse(yx,yy,3800,3800*q,.6,0,7);g.stroke();}
+  // ice caps and drifting clouds
+  g.fillStyle='rgba(240,248,255,.9)';g.beginPath();g.ellipse(0,-PLANET_R,PLANET_R*.55,PLANET_R*.12,0,0,7);g.fill();g.beginPath();g.ellipse(0,PLANET_R,PLANET_R*.5,PLANET_R*.1,0,0,7);g.fill();
+  g.fillStyle='rgba(255,255,255,.35)';for(let i=0;i<7;i++){const a=i*.9+clock*.02,d=PLANET_R*(.35+.08*(i%4));g.beginPath();g.ellipse(Math.cos(a)*d,Math.sin(a)*d,PLANET_R*.12,PLANET_R*.04,a,0,7);g.fill();}
+  g.restore();
+  // the planet's name
+  const fs=PLANET_R*.075;g.font=`800 ${fs}px "Baloo 2",sans-serif`;g.textAlign='center';g.textBaseline='middle';
+  g.lineWidth=fs*.12;g.strokeStyle='rgba(10,12,16,.8)';g.strokeText('CAT EARTH',0,-PLANET_R*1.16);g.fillStyle='#fff4e0';g.fillText('CAT EARTH',0,-PLANET_R*1.16);
+}
 function drawBackground(z,vl,vt,vw,vh){
-  ctx.fillStyle=WATER;ctx.fillRect(vl,vt,vw,vh);
+  if(vw>=PLANET_R*.15){ctx.fillStyle='#070a14';ctx.fillRect(vl,vt,vw,vh);drawEarth(z,vl,vt,vw,vh);}
+  else{ctx.fillStyle=WATER;ctx.fillRect(vl,vt,vw,vh);}
   ctx.drawImage(lowCv,-LEXT,-LEXT,LEXT*2,LEXT*2);
   const k=z*DPR,t=phone?(k>.9?1:k>.45?.6:k>.24?.36:0):(k>1.05?1.5:k>.5?.75:k>.24?.36:0);
   if(t){let budget=phone?2:4;
@@ -661,6 +699,78 @@ const snd={
   warn(){tone(330,.28,'square',.07,0,0);tone(247,.4,'square',.07,0,.3);},
   lose(){tone(392,.25,'sawtooth',.09,370,0);tone(349,.25,'sawtooth',.09,330,.27);tone(294,.7,'sawtooth',.09,150,.54);},
   win(){[523,659,784].forEach((f,i)=>tone(f,.18,'triangle',.16,0,i*.12));[523,659,784,1046].forEach(f=>tone(f,1.1,'triangle',.09,0,.4));}};
+
+// ---------- music (composed in code: menu meow tune + battle track that intensifies) ----------
+const MUS_VOL=1,MENU_BOOST=1.5; // overall music level, and extra lift for the gentler menu tune
+const MUS={on:true,out:null,menu:null,battle:null,track:null,step:0,next:0,int:0,cycle:0};
+try{MUS.on=localStorage.getItem('catorb-music')!=='0';}catch(e){}
+const mf=m=>440*Math.pow(2,(m-69)/12); // MIDI note number -> frequency
+function musInit(){const a=SFX.ctx;if(!a||MUS.out)return;
+  MUS.out=a.createGain();MUS.out.gain.value=MUS.on?MUS_VOL:0;MUS.out.connect(a.destination);
+  MUS.menu=a.createGain();MUS.menu.gain.value=0;MUS.menu.connect(MUS.out);
+  MUS.battle=a.createGain();MUS.battle.gain.value=0;MUS.battle.connect(MUS.out);}
+function env(g,t,a,peak,dur){g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(.0006,t+dur);}
+function mOsc(dest,type,f,t,dur,vol,att,filt){const a=SFX.ctx,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t);
+  let n=o;if(filt){const fl=a.createBiquadFilter();fl.type='lowpass';fl.frequency.value=filt;o.connect(fl);n=fl;}
+  n.connect(g);g.connect(dest);env(g,t,att||.005,vol,dur);o.start(t);o.stop(t+dur+.05);return o;}
+function mNoise(dest,t,dur,vol,type,freq){const a=SFX.ctx,s=a.createBufferSource(),fl=a.createBiquadFilter(),g=a.createGain();
+  s.buffer=SFX.noise;fl.type=type;fl.frequency.value=freq;s.connect(fl);fl.connect(g);g.connect(dest);env(g,t,.002,vol,dur);s.start(t,Math.random()*.8);s.stop(t+dur+.05);}
+// a synthesized "meow": the pitch rises then falls while a vowel-like filter opens and closes (m-e-o-w)
+function meow(dest,f,t,dur,vol){const a=SFX.ctx,o=a.createOscillator(),o2=a.createOscillator(),bp=a.createBiquadFilter(),lp=a.createBiquadFilter(),g=a.createGain();
+  o.type='sawtooth';o2.type='triangle';
+  for(const[osc,k]of[[o,1],[o2,2]]){osc.frequency.setValueAtTime(f*.82*k,t);osc.frequency.linearRampToValueAtTime(f*1.12*k,t+dur*.3);osc.frequency.linearRampToValueAtTime(f*.9*k,t+dur);}
+  bp.type='bandpass';bp.Q.value=3;bp.frequency.setValueAtTime(700,t);bp.frequency.linearRampToValueAtTime(1900,t+dur*.35);bp.frequency.linearRampToValueAtTime(800,t+dur);
+  lp.type='lowpass';lp.frequency.value=3200;o.connect(bp);o2.connect(bp);bp.connect(lp);lp.connect(g);g.connect(dest);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.04);g.gain.setValueAtTime(vol*.85,t+dur*.6);g.gain.exponentialRampToValueAtTime(.0006,t+dur+.08);
+  o.start(t);o2.start(t);o.stop(t+dur+.12);o2.stop(t+dur+.12);}
+const drumKick=(d,t,v)=>{const a=SFX.ctx,o=a.createOscillator(),g=a.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(42,t+.13);o.connect(g);g.connect(d);env(g,t,.002,v,.22);o.start(t);o.stop(t+.25);};
+const snare=(d,t,v)=>{mNoise(d,t,.14,v,'bandpass',1800);mOsc(d,'triangle',190,t,.08,v*.5);};
+const hat=(d,t,v)=>mNoise(d,t,.035,v,'highpass',7000);
+
+// Menu: C major, C-Am-F-G, 96 bpm. Meows sing the tune; every other loop a marimba takes it and the cats answer
+const M_PROG=[[48,52,55],[45,48,52],[41,45,48],[43,47,50]];
+const M_TUNE=[[0,76,3],[4,79,3],[8,76,6],[16,72,3],[22,74,2],[24,76,6],[32,77,3],[36,81,3],[40,79,6],[48,76,3],[52,74,3],[56,72,6],[62,84,1]];
+function menuStep(s,t,sp){const d=MUS.menu,bar=Math.floor(s/16)%4,b=s%16,ch=M_PROG[bar];
+  if(b===0)for(const m of ch)mOsc(d,'triangle',mf(m+12),t,sp*15,.035,.25,1400);
+  if(b===0||b===6||b===8)mOsc(d,'triangle',mf(ch[0]-12),t,sp*3,.16,.005,600);
+  if(b%4===2)mNoise(d,t,.06,.03,'bandpass',5200);
+  for(const[st,m,len]of M_TUNE)if(st===s%64){
+    if(MUS.cycle%2===0||st===62)meow(d,mf(m-12),t,Math.min(.55,sp*len*.9),.13);
+    else mOsc(d,'sine',mf(m),t,sp*len*1.4,.12,.004);}}
+
+// Battle: A minor, Am-F-C-G. Layers join as intensity (0..1) rises, and the tempo climbs 124 -> 152 bpm
+const B_PROG=[[45,48,52],[41,45,48],[48,52,55],[43,47,50]];
+function battleStep(s,t,sp){const d=MUS.battle,I=MUS.int,bar=Math.floor(s/16)%4,b=s%16,ch=B_PROG[bar];
+  if(b===0||b===8||(I>.5&&(b===4||b===12))||(I>.85&&b===14))drumKick(d,t,.5);
+  if(I>.25&&(b===4||b===12))snare(d,t,.16+.08*I);
+  if(I>.7?true:(I>.12&&b%2===0))hat(d,t,b%4===2?.06:.035);
+  if(b%2===0)mOsc(d,'sawtooth',mf(ch[0]-12+(I>.6&&b%4===2?12:0)),t,sp*1.7,.13,.004,320+900*I);
+  if(I>.42)mOsc(d,'square',mf(ch[s%3]+24),t,sp*.9,.045,.003,1200+2600*I);
+  if(I>.72&&(b===0||b===3||b===6||b===10))mOsc(d,'square',mf(ch[(b/3|0)%3]+36),t,sp*1.6,.04,.004,3000);
+  if(I>.58&&s%32===24)meow(d,mf(ch[2]+12),t,.32,.12);   // a hissy battle meow every couple of bars
+  if(I>.9&&s%64===56)meow(d,mf(ch[0]+24),t,.22,.1);}
+
+function battleTarget(){if(state==='count')return .08;if(state==='finale')return 1;if(!player)return 0;
+  if(mode==='solo')return Math.min(1,.15+.75*player.r/SOLO_GOAL+.1*Math.min(1,time/120));
+  let v=Math.pow(1-(aliveN-1)/AI_COUNT,.8);if(finalOn)v=Math.max(v,.86);
+  if(player.alive){const near=cats.some(c=>c.alive&&!c.player&&canEat(c,player)&&Math.hypot(c.x-player.x,c.y-player.y)<c.r+600);if(near)v+=.18;}
+  return Math.max(.1,Math.min(1,v));}
+function setMusic(on,user){MUS.on=on;try{localStorage.setItem('catorb-music',on?'1':'0');}catch(e){}
+  for(const id of['musBtn','musMenu'])if($(id))$(id).textContent=on?'Music: on':'Music: off';
+  if(user)audioUnlock();if(MUS.out)MUS.out.gain.setTargetAtTime(on?MUS_VOL:0,SFX.ctx.currentTime,.1);}
+function musicTick(dt){const a=SFX.ctx;if(!a||a.state!=='running')return;musInit();
+  const want=(state==='menu'||(!$('end').hidden&&state!=='dead'))?'menu':'battle';
+  if(want!==MUS.track){MUS.track=want;MUS.step=0;MUS.cycle=0;MUS.next=a.currentTime+.08;
+    MUS.menu.gain.setTargetAtTime(want==='menu'?MENU_BOOST:0,a.currentTime,.35);MUS.battle.gain.setTargetAtTime(want==='battle'?1:0,a.currentTime,.35);}
+  MUS.battle.gain.setTargetAtTime(want==='battle'?(paused?.3:1):0,a.currentTime,.2);
+  MUS.int+=(battleTarget()-MUS.int)*Math.min(1,dt*.6);
+  if(!MUS.on){MUS.next=a.currentTime+.05;return;}
+  if(MUS.next<a.currentTime-.3)MUS.next=a.currentTime+.05; // catch up after a hiccup
+  while(MUS.next<a.currentTime+.15){
+    const bpm=MUS.track==='menu'?96:124+28*MUS.int,sp=60/bpm/4;
+    if(MUS.track==='menu')menuStep(MUS.step,MUS.next,sp);else battleStep(MUS.step,MUS.next,sp);
+    MUS.next+=sp;MUS.step++;if(MUS.step%64===0)MUS.cycle++;}}
+
 function setSound(on,user){SFX.on=on;try{localStorage.setItem('catorb-sound',on?'1':'0');}catch(e){}
   for(const id of['sndBtn','sndMenu'])if($(id))$(id).textContent=on?'Sound: on':'Sound: off';if(on&&user){audioUnlock();snd.pick(10);}}
 
@@ -842,16 +952,20 @@ function update(dt){
     if(king.player){record(1,true);}
     state='finale';if(king.player)snd.win();toast(king.player?'You are King of the Hill!':`${king.name} is King of the Hill`);}
   if(state==='finale'){finT+=dt;
-    king.t+=(R0*1.45-king.t)*Math.min(1,dt*.75);arenaR+=(R0*1.42-arenaR)*Math.min(1,dt*1.2);
-    if(finT>5.5&&!endShown){endShown=true;
+    arenaR+=(R0*1.42-arenaR)*Math.min(1,dt*1.2);
+    if(finT<FIN_CITY)king.t+=(R0*1.45-king.t)*Math.min(1,dt*.75);
+    else{const k=Math.min(1,(finT-FIN_CITY)/FIN_EARTH),e=k*k*(3-2*k),r0=R0*1.45,r1=PLANET_R*1.06;king.t=r0*Math.pow(r1/r0,e);
+      if(!king.earthSaid&&finT>FIN_CITY+.6){king.earthSaid=1;toast('The city was just the start… Cat Earth!');}
+      if(!king.earthDone&&k>=1){king.earthDone=1;toast(king.player?'You swallowed the whole planet!':`${king.name} swallowed Cat Earth!`);kick(14);}}
+    if(finT>FIN_CITY+FIN_EARTH+2&&!endShown){endShown=true;
       if(mode==='solo'){showEnd(king.medal?`${king.medal[0].toUpperCase()+king.medal.slice(1)} medal!`:'Max size!',king.soloText,false);
         const m=$('medal');m.className='medal '+(king.medal||'none');m.textContent=king.medal?king.medal[0].toUpperCase():'';m.hidden=!king.medal;$('copyBtn').hidden=false;}
-      else if(king.player)showEnd('King of the Hill!',`${king.name} absorbed all ${cats.length-1} cats in ${fmt(time)} and grew to fill the whole city.`,false);
-      else showEnd(`${king.name} wins`,`${king.name} is King of the Hill and has swallowed the whole city.`,false);}}
+      else if(king.player)showEnd('King of the Hill!',`${king.name} absorbed all ${cats.length-1} cats in ${fmt(time)}, then swallowed the city and the whole of Cat Earth.`,false);
+      else showEnd(`${king.name} wins`,`${king.name} is King of the Hill and has swallowed the whole of Cat Earth.`,false);}}
   const focus=player.alive?player:alive.reduce((m,c)=>c.r>m.r?c:m,alive[0]);
   if(focus){cam.x+=(focus.x-cam.x)*Math.min(1,dt*5);cam.y+=(focus.y-cam.y)*Math.min(1,dt*5);
     const base=dev==='duo'?1.0:dev==='max'?.86:Math.min(W,H)/760;
-    const tz=state==='finale'?Math.max(.035,Math.min(1.25,Math.min(W,H)/(2.4*focus.r))):Math.max(.14,Math.min(1.25,base*Math.pow(30/focus.r,ZOOM_OUT)));
+    const tz=state==='finale'?Math.max(.0004,Math.min(1.25,Math.min(W,H)/(Math.max(2.4*focus.r,finT>FIN_CITY?Math.min(PLANET_R*2.9,focus.r*5):0)))):Math.max(.14,Math.min(1.25,base*Math.pow(30/focus.r,ZOOM_OUT)));
     cam.z+=(tz-cam.z)*Math.min(1,dt*(state==='finale'?1.5:2));}
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').style.opacity=0;}
   lbTimer-=dt;if(lbTimer<=0){lbTimer=.25;hud(alive);}
@@ -863,7 +977,7 @@ function hud(alive){
   if(mode==='solo'){$('left').textContent=SOLO_GOAL;$('pbarFill').style.width=Math.min(100,player.r/SOLO_GOAL*100)+'%';
     const nx=MEDALS.find(([m,l])=>time<=l);$('hill').textContent=state==='finale'?'Max size!':`Time ${fmtT(time)}`+(nx?` · ${nx[0]} by ${fmtT(nx[1])}`:dayBest?` · today's best ${fmtT(dayBest)}`:'');return;}
   $('left').textContent=alive.length;
-  $('hill').textContent=state==='count'?'Get ready…':time<GRACE&&player.alive?`Safe for ${Math.ceil(GRACE-time)}s · rivals can't eat you yet`:state==='finale'?'Victory!':finalOn?'Final circle closing in!':`Match time ${fmt(time)} · final circle at ${FINAL_N} cats`;
+  $('hill').textContent=state==='count'?'Get ready…':state==='finale'?'Victory!':time<GRACE&&player.alive?`Safe for ${Math.ceil(GRACE-time)}s · rivals can't eat you yet`:state==='finale'?'Victory!':finalOn?'Final circle closing in!':`Match time ${fmt(time)} · final circle at ${FINAL_N} cats`;
   const top=alive.slice().sort((a,b)=>b.r-a.r);let rows=top.slice(0,5);
   if(player.alive&&!rows.includes(player))rows=rows.slice(0,4).concat(player);
   $('lb').innerHTML=rows.map(c=>`<li class="${c.player?'me':''}" value="${top.indexOf(c)+1}"><span>${esc(c.name)}</span><span>${Math.round(c.r)}</span></li>`).join('');
@@ -884,7 +998,7 @@ function render(){
   const vis=cats.filter(c=>c.alive&&c.x+c.r*1.3>vl&&c.x-c.r*1.3<vl+vw&&c.y+c.r*1.3>vt&&c.y-c.r*1.3<vt+vh).sort((a,b)=>a.r-b.r);
   for(const c of vis){
     if(c.dash>0){ctx.fillStyle='rgba(255,244,224,.2)';ctx.beginPath();ctx.arc(c.x-c.vx*.06,c.y-c.vy*.06,c.r,0,7);ctx.fill();}
-    if(c.player&&mode==='koth'&&(state==='count'||time<GRACE)){const a=.45+.35*Math.sin(clock*6);ctx.strokeStyle=`rgba(127,208,255,${a})`;ctx.lineWidth=7/z;
+    if(c.player&&mode==='koth'&&state!=='finale'&&(state==='count'||time<GRACE)){const a=.45+.35*Math.sin(clock*6);ctx.strokeStyle=`rgba(127,208,255,${a})`;ctx.lineWidth=7/z;
       ctx.setLineDash([10/z,8/z]);ctx.lineDashOffset=-clock*30/z;ctx.beginPath();ctx.arc(c.x,c.y,c.r+16/z,0,7);ctx.stroke();ctx.setLineDash([]);}
     if(c.player){ctx.strokeStyle='rgba(127,224,180,.9)';ctx.lineWidth=4/z;ctx.beginPath();ctx.arc(c.x,c.y,c.r+7/z,0,7);ctx.stroke();
       if(phone&&joy.id===null&&c.hx!==undefined&&!c.stopped){const a=Math.atan2(c.hy,c.hx),d=c.r+16/z,q=8/z;
@@ -938,6 +1052,7 @@ function drawArrows(){
 }
 function drawMini(){
   if(mini.hidden)return;const s=mini.width,h=s/2,k=(h-6)/R0;
+  if(state==='finale'){mctx.setTransform(1,0,0,1,0,0);mctx.clearRect(0,0,s,s);mctx.fillStyle='rgba(31,78,107,.6)';mctx.fillRect(0,0,s,s);mctx.fillStyle=king?king.fur.b:'#f4a259';mctx.globalAlpha=.85;mctx.fillRect(0,0,s,s);mctx.globalAlpha=1;return;}
   mctx.setTransform(1,0,0,1,0,0);mctx.clearRect(0,0,s,s);
   mctx.fillStyle='rgba(31,78,107,.6)';mctx.fillRect(0,0,s,s);mctx.fillStyle='rgba(60,62,70,.9)';mctx.fillRect(h-R0*k,h-R0*k,R0*2*k,R0*2*k);
   if(finalOn&&state!=='finale'){mctx.strokeStyle='#ff6f59';mctx.lineWidth=1.5*DPR;mctx.beginPath();mctx.arc(h,h,arenaR*k,0,7);mctx.stroke();}
@@ -976,6 +1091,7 @@ function comboHud(){const t=combo>=3&&state==='play'&&player&&player.alive?`<b>�
 function loop(now){requestAnimationFrame(loop);const rdt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;clock+=rdt;
   shakeA*=Math.exp(-rdt*7);if(shakeA<.2)shakeA=0;
   const dt=slowT>0?rdt*.3:rdt;if(slowT>0)slowT-=rdt;
+  try{musicTick(rdt);}catch(e){}
   try{if(state==='menu')menuScene(rdt);else if(!paused){if(state==='count'){countdown(rdt);render();}else{update(dt);render();comboHud();}}}
   catch(e){if(++errCount<4)showErr((e&&e.message)+'\n'+((e&&e.stack)||'').split('\n').slice(0,3).join('\n'));}}
 
@@ -1036,8 +1152,10 @@ setMode(mode);
 for(const r of document.querySelectorAll('input[name=dev]'))r.addEventListener('change',e=>setDev(e.target.value));
 {let saved=null;try{saved=localStorage.getItem('catorb-dev');}catch(e){}setDev(saved&&(DEVN[saved]||saved==='auto')?saved:'duo');}
 for(const id of['sndBtn','sndMenu'])$(id).addEventListener('click',e=>{e.stopPropagation();setSound(!SFX.on,true);if(e.currentTarget.id==='sndBtn')e.currentTarget.blur();});
+for(const id of['musBtn','musMenu'])$(id).addEventListener('click',e=>{e.stopPropagation();setMusic(!MUS.on,true);if(e.currentTarget.id==='musBtn')e.currentTarget.blur();});
 addEventListener('pointerdown',audioUnlock,{passive:true});
-setSound(SFX.on);
+addEventListener('keydown',audioUnlock);
+setSound(SFX.on);setMusic(MUS.on);
 buildFurs();
 buildProps();
 requestAnimationFrame(loop);
