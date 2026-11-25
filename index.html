@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="theme-color" content="#1d2027">
-<title>Cat Orbs: King of the Hill v1.0</title>
+<title>Cat Orbs: King of the Hill v1.1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
@@ -146,7 +146,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
         <h1>Cat Orbs: <em>King of the Hill</em></h1>
         <p><b>This preview can't run games.</b> iMessage and Files show HTML files in a quick preview that turns games off.</p>
         <p>To play on iPhone, open the game's <b>web link</b> in <b>Safari</b>. Ask whoever sent you this file for the link.</p>
-        <p style="font-size:13px;opacity:.6">Version 1.0</p>
+        <p style="font-size:13px;opacity:.6">Version 1.1</p>
       </div>
     </noscript>
     <h1>Cat Orbs: <em>King of the Hill</em></h1>
@@ -155,7 +155,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
       <summary>How to play</summary>
       <ul>
         <li class="pc">Steer with the <b>mouse</b> or <span class="key">WASD</span> / arrows. <span class="key">Space</span> to dash</li>
-        <li class="ph">Drag anywhere with your thumb to steer (a joystick appears). Tap <b>Dash</b> for a burst of speed</li>
+        <li class="ph">Drag anywhere with your thumb to steer (a joystick appears). Lift your thumb and your cat <b>keeps cruising</b> the same way, so you can tap <b>Dash</b> any time. A quick tap without dragging stops you</li>
         <li>Twelve kinds of treats, from kibble and toy mice up to milk tankers, fish markets and a mountain of yarn. Bigger ones are worth far more</li>
         <li>A red ring on a treat means you are too small for it, and the number shows the size you need</li>
         <li>To absorb a cat or a treat you must be at least <b>1.2× its size</b>. You grow by its size</li>
@@ -192,7 +192,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
     </div>
     <p id="devNote"></p>
     <div class="btns sticky"><button class="big" id="playBtn">Play</button></div>
-    <p style="font-size:12px;opacity:.55;margin:4px 0 0">Version 1.0</p>
+    <p style="font-size:12px;opacity:.55;margin:4px 0 0">Version 1.1</p>
   </div>
 </div>
 
@@ -302,7 +302,7 @@ const FOODT=[
  {k:'mouse',  v:18, r:17, n:50, rate:4,  glow:'#e0d7ff'},
  {k:'box',    v:26, r:26, n:34, rate:2,  glow:'#ffe08a'},
  {k:'bed',    v:34, r:34, n:24, rate:1.2,glow:'#c9a8ff'},
- {k:'tuna',   v:44, r:46, n:16, rate:.8, glow:'#9dffb0'},
+ {k:'tuna',   v:44, r:46, n:16, rate:.8, glow:'#7fd0ff'},
  {k:'tower',  v:58, r:62, n:11, rate:.5, glow:'#ffcf9e'},
  {k:'truck',  v:76, r:84, n:7,  rate:.3, glow:'#ffb35c'},
  {k:'tanker', v:100,r:110,n:5,  rate:.2, glow:'#a8d8ff'},
@@ -725,9 +725,13 @@ function think(c){
 function playerInput(c){
   let kx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),ky=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
   if(kx||ky){const m=Math.hypot(kx,ky);c.dx=kx/m;c.dy=ky/m;mouse.active=false;return;}
-  if(phone&&joy.id!==null){
-    const jx=joy.x-joy.ox,jy=joy.y-joy.oy,l=Math.hypot(jx,jy);if(l<6){c.dx=c.dy=0;return;}
-    const mag=Math.min(1,l/55);c.dx=jx/l*mag;c.dy=jy/l*mag;return;}
+  if(phone){
+    if(joy.id!==null){const jx=joy.x-joy.ox,jy=joy.y-joy.oy,l=Math.hypot(jx,jy);
+      if(l<8)return; // thumb just resting: keep the current heading
+      const mag=Math.min(1,l/55);c.dx=jx/l*mag;c.dy=jy/l*mag;c.hx=jx/l;c.hy=jy/l;c.stopped=false;joy.moved=true;return;}
+    // thumb lifted: cruise in the last direction at full speed (a quick tap stops)
+    if(c.hx!==undefined&&!c.stopped){c.dx=c.hx;c.dy=c.hy;}else{c.dx*=.85;c.dy*=.85;}
+    return;}
   if(!mouse.active){c.dx*=.9;c.dy*=.9;return;}
   const dx=mouse.x-W/2,dy=mouse.y-H/2,l=Math.hypot(dx,dy);if(l<4){c.dx=c.dy=0;return;}
   const mag=Math.min(1,l/90);c.dx=dx/l*mag;c.dy=dy/l*mag;
@@ -853,7 +857,10 @@ function render(){
   const vis=cats.filter(c=>c.alive&&c.x+c.r*1.3>vl&&c.x-c.r*1.3<vl+vw&&c.y+c.r*1.3>vt&&c.y-c.r*1.3<vt+vh).sort((a,b)=>a.r-b.r);
   for(const c of vis){
     if(c.dash>0){ctx.fillStyle='rgba(255,244,224,.2)';ctx.beginPath();ctx.arc(c.x-c.vx*.06,c.y-c.vy*.06,c.r,0,7);ctx.fill();}
-    if(c.player){ctx.strokeStyle='rgba(127,224,180,.9)';ctx.lineWidth=4/z;ctx.beginPath();ctx.arc(c.x,c.y,c.r+7/z,0,7);ctx.stroke();}
+    if(c.player){ctx.strokeStyle='rgba(127,224,180,.9)';ctx.lineWidth=4/z;ctx.beginPath();ctx.arc(c.x,c.y,c.r+7/z,0,7);ctx.stroke();
+      if(phone&&joy.id===null&&c.hx!==undefined&&!c.stopped){const a=Math.atan2(c.hy,c.hx),d=c.r+16/z,q=8/z;
+        ctx.save();ctx.translate(c.x+c.hx*d,c.y+c.hy*d);ctx.rotate(a);ctx.fillStyle='rgba(127,224,180,.85)';
+        ctx.beginPath();ctx.moveTo(q,0);ctx.lineTo(-q*.6,q*.9);ctx.lineTo(-q*.2,0);ctx.lineTo(-q*.6,-q*.9);ctx.closePath();ctx.fill();ctx.restore();}}
     if(c.pulse>0){const k=Math.sin(c.pulse/.35*Math.PI);ctx.save();ctx.translate(c.x,c.y);ctx.scale(1+k*.11,1-k*.09);drawCat(ctx,c,0,0,c.r);ctx.restore();} // squash and stretch
     else drawCat(ctx,c,c.x,c.y,c.r);}
   const tags=[];
@@ -958,13 +965,14 @@ function buildFurs(){
 addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;mouse.x=e.clientX-FX;mouse.y=e.clientY-FY;mouse.active=true;});
 cv.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'){mouse.x=e.clientX-FX;mouse.y=e.clientY-FY;mouse.active=true;}});
 cv.addEventListener('touchstart',e=>{e.preventDefault();
-  if(phone){if(joy.id===null){const t=e.changedTouches[0];joy.id=t.identifier;joy.ox=joy.x=t.clientX-FX;joy.oy=joy.y=t.clientY-FY;}return;}
+  if(phone){if(joy.id===null){const t=e.changedTouches[0];joy.id=t.identifier;joy.ox=joy.x=t.clientX-FX;joy.oy=joy.y=t.clientY-FY;joy.moved=false;joy.t0=performance.now();}return;}
   const t=e.touches[0];mouse.x=t.clientX-FX;mouse.y=t.clientY-FY;mouse.active=true;},{passive:false});
 cv.addEventListener('touchmove',e=>{e.preventDefault();
   if(phone){for(const t of e.changedTouches)if(t.identifier===joy.id){joy.x=t.clientX-FX;joy.y=t.clientY-FY;
       const jx=joy.x-joy.ox,jy=joy.y-joy.oy,l=Math.hypot(jx,jy);if(l>90){joy.ox=joy.x-jx/l*90;joy.oy=joy.y-jy/l*90;}}return;}
   const t=e.touches[0];mouse.x=t.clientX-FX;mouse.y=t.clientY-FY;mouse.active=true;},{passive:false});
-const endJoy=e=>{for(const t of e.changedTouches)if(t.identifier===joy.id)joy.id=null;};
+const endJoy=e=>{for(const t of e.changedTouches)if(t.identifier===joy.id){joy.id=null;
+    if(!joy.moved&&performance.now()-joy.t0<250&&player&&player.alive&&state!=='menu')player.stopped=true;}}; // quick tap = stop
 cv.addEventListener('touchend',endJoy);cv.addEventListener('touchcancel',endJoy);
 document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('dblclick',e=>e.preventDefault());
