@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="theme-color" content="#1d2027">
-<title>Cat Orbs: King of the Hill v1.3</title>
+<title>Cat Orbs: King of the Hill v1.4</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
@@ -151,7 +151,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
         <h1>Cat Orbs: <em>King of the Hill</em></h1>
         <p><b>This preview can't run games.</b> iMessage and Files show HTML files in a quick preview that turns games off.</p>
         <p>To play on iPhone, open the game's <b>web link</b> in <b>Safari</b>. Ask whoever sent you this file for the link.</p>
-        <p style="font-size:13px;opacity:.6">Version 1.3</p>
+        <p style="font-size:13px;opacity:.6">Version 1.4</p>
       </div>
     </noscript>
     <h1>Cat Orbs: <em>King of the Hill</em></h1>
@@ -198,7 +198,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
     </div>
     <p id="devNote"></p>
     <div class="btns sticky"><button class="big" id="playBtn">Play</button></div>
-    <p style="font-size:12px;opacity:.55;margin:4px 0 0">Version 1.3</p>
+    <p style="font-size:12px;opacity:.55;margin:4px 0 0">Version 1.4</p>
   </div>
 </div>
 
@@ -281,8 +281,16 @@ const FUR=[
  {n:'Cocoa',b:'#5b4636',s:'#36271c',st:1,eye:'#f7b733',req:['cats',40,'Absorb 40 cats in total']},
  {n:'Calico',b:'#f6efe4',s:'#c9b9a3',eye:'#9be36b',fx:'calico',req:['top',3,'Finish in the top 3']},
  {n:'Golden',b:'#f2c14e',s:'#b8862b',eye:'#ff7a59',fx:'gold',req:['wins',1,'Win a game']},
- {n:'Cosmic',b:'#3b2a6e',s:'#22164a',eye:'#7ff9ff',fx:'cosmic',req:['wins',3,'Win 3 games']}];
+ {n:'Cosmic',b:'#3b2a6e',s:'#22164a',eye:'#7ff9ff',fx:'cosmic',req:['wins',3,'Win 3 games']},
+ {n:'Doodle',b:'#fbf1e1',s:'#c9b9a3',eye:'#4fb35a',head:1}];
 const AI_FURS=FUR.slice(0,9);
+// hand-drawn head skin: white fill mask (tinted per fur color, cached), line art, face (eyes are drawn live)
+const HEAD={},HEAD_TINT={};let headWait=3;
+for(const k of['fill','line','face']){const im=new Image();im.onload=()=>{if(--headWait===0&&typeof buildFurs==='function')try{buildFurs();}catch(e){}};im.src=`cat-head-${k}.png`;HEAD[k]=im;}
+function headFill(col){
+  if(HEAD_TINT[col])return HEAD_TINT[col];const im=HEAD.fill;if(headWait>0||!im.naturalWidth)return null;
+  const cv=document.createElement('canvas');cv.width=im.naturalWidth;cv.height=im.naturalHeight;const x=cv.getContext('2d');
+  x.drawImage(im,0,0);x.globalCompositeOperation='source-in';x.fillStyle=col;x.fillRect(0,0,cv.width,cv.height);return HEAD_TINT[col]=cv;}
 let prog={games:0,cats:0,treats:0,best:99,wins:0,pick:0};
 try{const s=JSON.parse(localStorage.getItem('catorb-prog')||'null');if(s)prog=Object.assign(prog,s);}catch(e){}
 const saveProg=()=>{try{localStorage.setItem('catorb-prog',JSON.stringify(prog));}catch(e){}};
@@ -535,6 +543,14 @@ const STARS=[[-.5,-.4],[.3,-.6],[.6,.1],[-.2,.5],[.1,-.15],[-.65,.15],[.45,.55],
 function drawCat(g,c,x,y,r){
   const f=c.fur;g.save();g.translate(x,y);
   g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(r*.08,r*.9,r*.85,r*.22,0,0,7);g.fill();
+  const hf=f.head&&headFill(f.b);
+  if(hf){const S=r*2.83; // sprite ball radius is .353 of its size, centered
+    g.drawImage(hf,-S/2,-S/2,S,S);
+    const gr=g.createRadialGradient(-r*.35,-r*.4,r*.05,0,0,r);
+    gr.addColorStop(0,'rgba(255,255,255,.35)');gr.addColorStop(.5,'rgba(255,255,255,0)');gr.addColorStop(1,'rgba(0,0,0,.18)');
+    g.fillStyle=gr;g.beginPath();g.arc(0,0,r,0,7);g.fill();
+    g.drawImage(HEAD.line,-S/2,-S/2,S,S);g.drawImage(HEAD.face,-S/2,-S/2,S,S);
+    drawEyes(g,c,f,r,.4,-.02,.9);g.restore();return;}
   for(const s of[-1,1]){g.fillStyle=f.s;g.beginPath();g.moveTo(s*r*.8,-r*.4);g.lineTo(s*r*.62,-r*1.18);g.lineTo(s*r*.12,-r*.86);g.closePath();g.fill();
     g.fillStyle=f.fx==='cosmic'?'#c04fd8':'#f2a5a8';g.beginPath();g.moveTo(s*r*.66,-r*.5);g.lineTo(s*r*.58,-r*.98);g.lineTo(s*r*.28,-r*.8);g.closePath();g.fill();}
   circ(g,0,0,r,f.b);
@@ -551,19 +567,23 @@ function drawCat(g,c,x,y,r){
     for(const s of[-1,1]){g.beginPath();g.moveTo(s*r*.97,r*.05);g.lineTo(s*r*.72,r*.08);g.moveTo(s*r*.93,r*.3);g.lineTo(s*r*.7,r*.28);g.stroke();}}
   g.globalAlpha=.55;g.fillStyle=shade(f.b,45);g.beginPath();g.ellipse(0,r*.32,r*.38,r*.26,0,0,7);g.fill();g.globalAlpha=1;
   if(f.fx==='gold'){g.fillStyle='#fff';g.beginPath();const sx=-r*.5,sy=-r*.5,q=r*.16;g.moveTo(sx,sy-q);g.lineTo(sx+q*.25,sy-q*.25);g.lineTo(sx+q,sy);g.lineTo(sx+q*.25,sy+q*.25);g.lineTo(sx,sy+q);g.lineTo(sx-q*.25,sy+q*.25);g.lineTo(sx-q,sy);g.lineTo(sx-q*.25,sy-q*.25);g.closePath();g.fill();}
-  const lx=c.look.x*r*.07,ly=c.look.y*r*.06;
-  for(const s of[-1,1]){const ex=s*r*.34+lx,ey=-r*.06+ly;
-    if(c.blink<0){g.strokeStyle='#1a1416';g.lineWidth=r*.05;g.beginPath();g.arc(ex,ey-r*.04,r*.13,.3,Math.PI-.3);g.stroke();continue;}
-    g.fillStyle='#fffdf6';g.beginPath();g.ellipse(ex,ey,r*.17,r*.19,0,0,7);g.fill();
-    g.fillStyle=f.eye;g.beginPath();g.ellipse(ex+lx*.6,ey+ly*.6,r*.13,r*.15,0,0,7);g.fill();
-    g.fillStyle='#120e10';g.beginPath();g.ellipse(ex+lx*.9,ey+ly*.9,r*.045,r*.12,0,0,7);g.fill();
-    circ(g,ex+lx*.6-r*.05,ey+ly*.6-r*.07,r*.035,'#fff');}
+  drawEyes(g,c,f,r,.34,-.06,1);
   g.fillStyle='#e97c8a';g.beginPath();g.moveTo(-r*.07,r*.17);g.lineTo(r*.07,r*.17);g.lineTo(0,r*.26);g.closePath();g.fill();
   g.strokeStyle='#3a2a2a';g.lineWidth=Math.max(1,r*.03);g.beginPath();g.arc(-r*.07,r*.27,r*.07,.1,Math.PI-.4);g.moveTo(r*.14,r*.27);g.arc(r*.07,r*.27,r*.07,.4,Math.PI-.1);g.stroke();
   g.strokeStyle='rgba(255,255,255,.75)';g.lineWidth=Math.max(.8,r*.02);
   for(const s of[-1,1])for(const k of[-1,0,1]){g.beginPath();g.moveTo(s*r*.28,r*.24+k*r*.04);g.lineTo(s*r*.85,r*.18+k*r*.12);g.stroke();}
   g.strokeStyle='rgba(255,255,255,.5)';g.lineWidth=Math.max(1.5,r*.035);g.beginPath();g.arc(0,0,r,0,7);g.stroke();
   g.restore();
+}
+function drawEyes(g,c,f,r0,EX,EY,k){
+  const r=r0*k,lx=c.look.x*r*.07,ly=c.look.y*r*.06;
+  for(const s of[-1,1]){const ex=s*r0*EX+lx,ey=r0*EY+ly;
+    if(c.blink<0){g.strokeStyle='#1a1416';g.lineWidth=r*.05;g.beginPath();g.arc(ex,ey-r*.04,r*.13,.3,Math.PI-.3);g.stroke();continue;}
+    if(f.head){g.fillStyle='#111';g.beginPath();g.ellipse(ex,ey,r*.2,r*.22,0,0,7);g.fill();}
+    g.fillStyle='#fffdf6';g.beginPath();g.ellipse(ex,ey,r*.17,r*.19,0,0,7);g.fill();
+    g.fillStyle=f.eye;g.beginPath();g.ellipse(ex+lx*.6,ey+ly*.6,r*.13,r*.15,0,0,7);g.fill();
+    g.fillStyle='#120e10';g.beginPath();g.ellipse(ex+lx*.9,ey+ly*.9,r*.045,r*.12,0,0,7);g.fill();
+    circ(g,ex+lx*.6-r*.05,ey+ly*.6-r*.07,r*.035,'#fff');}
 }
 function shade(hex,amt){const n=parseInt(hex.slice(1),16);const c=v=>Math.max(0,Math.min(255,v+amt));return`rgb(${c(n>>16)},${c(n>>8&255)},${c(n&255)})`;}
 
