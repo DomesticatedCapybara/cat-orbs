@@ -1,0 +1,16 @@
+{
+  "name": "Cat Orbs: King of the Hill",
+  "short_name": "Cat Orbs",
+  "description": "Prowl the city, gobble treats and absorb every cat smaller than you.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1d2027",
+  "theme_color": "#1d2027",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
