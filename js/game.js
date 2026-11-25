@@ -9,7 +9,8 @@ function start(){
   ufo=null;aliveN=(mode==='solo'||mode==='clean'?0:mode==='camp'?LV.rivals:AI_COUNT)+1;cats=[];eaten=[];foodEaten=[];parts=[];floats=[];time=0;arenaR=R0*1.42;finalOn=false;king=null;setCity(mode==='solo'?dailySeed():mode==='camp'?LV.seed:mode==='clean'?CL.seed:(Math.random()*4294967295)>>>0);buildProps();finT=0;endShown=false;recorded=false;myCats=0;myTreats=0;MILESTONES.forEach(m=>m.done=false);
   wasUnl=FUR.map(isUnl);
   RNG=mode==='solo'?seeded(dailySeed()):Math.random; // same start for everyone on the same day
-  if(mode==='clean'){finalOn=true;arenaR=CL.zone;placeJunk();} // the job site: a fenced circle full of junk, no fresh treats
+  if(mode==='clean'){finalOn=true;arenaR=CL.zone;placeJunk(); // outside the fence: props can't be eaten or highlighted, critters are gone
+    for(const p of props)if(Math.hypot(p.x,p.y)>arenaR-p.r*.3)p.out=1;critters=critters.filter(m=>Math.hypot(m.x,m.y)<arenaR-30);} // the job site: a fenced circle full of junk, no fresh treats
   else{foods=[];for(const T of FOODT.slice().reverse())for(let i=0;i<T.n;i++)foods.push(placeFood(T));}
   const nm=($('nameIn').value.trim()||'You').slice(0,14);
   const pf=isUnl(FUR[prog.pick]||FUR[0])?FUR[prog.pick]:FUR[0];
@@ -128,7 +129,7 @@ function think(c){
   const fv=280+c.r*3;let bf=null,fs=0;
   for(const f of foods){const ex=f.x-c.x,ey=f.y-c.y;if(Math.abs(ex)>fv||Math.abs(ey)>fv||!canEatF(c,f))continue;
     const s=f.v*f.v/(Math.hypot(ex,ey)+30);if(s>fs){fs=s;bf=f;}}
-  eachProp(c.x-fv,c.y-fv,c.x+fv,c.y+fv,p=>{if(c.r<=p.r*EAT)return;const s=p.v*p.v/(Math.hypot(p.x-c.x,p.y-c.y)+30);if(s>fs){fs=s;bf=p;}});
+  eachProp(c.x-fv,c.y-fv,c.x+fv,c.y+fv,p=>{if(p.out||c.r<=p.r*EAT)return;const s=p.v*p.v/(Math.hypot(p.x-c.x,p.y-c.y)+30);if(s>fs){fs=s;bf=p;}});
   if(P==='forager')fs*=1.8;
   for(const u of powerups){if(!u.alive)continue;const d=Math.hypot(u.x-c.x,u.y-c.y);if(d<fv){const s=1600/(d+30);if(s>fs){fs=s;bf=u;}}}
   let tgt=best;if(bf&&(!best||fs*2.2>bs))tgt=bf;
@@ -200,7 +201,7 @@ function update(dt){
   for(const c of live){const mg=c.buff&&c.buff.magnet>0;if(fed||!c.alive||(c.r<MAGNET_R&&!c.player&&!mg))continue;
     const pm=c.player&&c.r<MAGNET_R*2, /* player assist: a small pull-in from the start */
       PR=mg?c.r*2.6+80:pm?Math.max(c.r*MAGNET_RANGE,c.r+PLAYER_PULL):c.r*MAGNET_RANGE,pull=(mg?300+c.r:pm?220:120+c.r*.8)*dt,lim=mg?.65:pm?.6:MAGNET_SMALL;
-    const tug=o=>{if(c.r<=o.r*EAT||o.r>c.r*lim)return;const dx=c.x-o.x,dy=c.y-o.y;if(Math.abs(dx)>PR||Math.abs(dy)>PR)return;
+    const tug=o=>{if(o.out||c.r<=o.r*EAT||o.r>c.r*lim)return;const dx=c.x-o.x,dy=c.y-o.y;if(Math.abs(dx)>PR||Math.abs(dy)>PR)return;
       const d=Math.hypot(dx,dy);if(d>PR||d<1)return;const st=Math.min(d,pull*(1.25-d/PR));o.x+=dx/d*st;o.y+=dy/d*st;};
     for(const f of foods)tug(f);
     eachProp(c.x-PR-CELL,c.y-PR-CELL,c.x+PR+CELL,c.y+PR+CELL,p=>{if(p.k!=='bldg')tug(p);});}
@@ -215,7 +216,7 @@ function update(dt){
         break;}}}
   for(const c of live){if(fed||!c.alive)continue;
     const qr=(c.r>=MAGNET_R||c.player)?c.r*MAGNET_RANGE+PLAYER_PULL+CELL:c.r;
-    eachProp(c.x-qr,c.y-qr,c.x+qr,c.y+qr,p=>{if(c.r<=p.r*EAT)return;
+    eachProp(c.x-qr,c.y-qr,c.x+qr,c.y+qr,p=>{if(p.out||c.r<=p.r*EAT)return;
       if(Math.hypot(p.x-c.x,p.y-c.y)<(p.r<14?c.r+p.r*.3:c.r-p.r*.4)){p.alive=false;
         if(c.player)comboHit();c.t=Math.sqrt(c.t*c.t+p.v*p.v*ITEM_GROWTH*(c.player?PLAYER_BONUS*comboMult():D().grow));c.pulse=.25;c.gulp=.35;propEaten.push({p,by:c,k:0,spin:Math.random()<.5?1:-1});if(c.player&&p.r>=30)kick(Math.min(12,3+p.r*.04));if(c.player&&c.dash>0&&p.r>=BIG_CATCH)dashRefund(c,.5,'Big catch! +½ dash');
         if(p.r>=14)burst(p.x,p.y,p.k==='bldg'?p.col:p.k==='tree'?'#4f9a58':p.k==='car'?p.col:'#9a8f7e',p.r>60?16:8);
@@ -241,13 +242,14 @@ function update(dt){
     else if(c.player&&tgt<1&&(c.nearT=(c.nearT||0)+1)%3!==0)tgt=c.nearPrev||0;
     else if(c.player&&tgt<1){const R=c.r+Math.max(28,c.r*.5);let near=false;
       for(const f of foods){if(Math.abs(f.x-c.x)<R&&Math.abs(f.y-c.y)<R&&canEatF(c,f)&&Math.hypot(f.x-c.x,f.y-c.y)<R){near=true;break;}}
-      if(!near)eachProp(c.x-R,c.y-R,c.x+R,c.y+R,p=>{if(!near&&c.r>p.r*EAT&&Math.hypot(p.x-c.x,p.y-c.y)<R+p.r*.3)near=true;});
+      if(!near)eachProp(c.x-R,c.y-R,c.x+R,c.y+R,p=>{if(!near&&!p.out&&c.r>p.r*EAT&&Math.hypot(p.x-c.x,p.y-c.y)<R+p.r*.3)near=true;});
       if(!near)for(const o of cats)if(o.alive&&o!==c&&canEat(c,o)&&Math.hypot(o.x-c.x,o.y-c.y)<R+o.r){near=true;break;}
       if(near)tgt=.7;c.nearPrev=tgt;}
     c.mo=(c.mo||0)+(tgt-(c.mo||0))*Math.min(1,dt*14);}
   if(player.alive)for(const m of MILESTONES)if(!m.done&&player.r>m.need){m.done=true;toast(`You can eat ${m.name} now!`);snd.level();}
   const cnt=new Map();for(const f of foods)cnt.set(f.T,(cnt.get(f.T)||0)+1);
   const af=finalOn?Math.min(1,Math.PI*arenaR*arenaR/(4*R0*R0)):1;
+  if(mode==='clean'&&state==='play')junkTick(dt);
   if(!fed&&mode!=='clean')for(const T of FOODT){const want=Math.round(T.n*af);let have=cnt.get(T)||0;
     let k=Math.floor(T.rate*dt+Math.random());while(k-->0&&have<want){foods.push(placeFood(T));have++;}}
   eaten=flyTick(eaten,dt,.45);

@@ -116,6 +116,7 @@ function updateCritters(dt){
       if(near&&nd<90){const d=Math.hypot(m.x-near.x,m.y-near.y)||1;m.vx=(m.x-near.x)/d*170;m.vy=(m.y-near.y)/d*170;m.t=.4;}
       else if(m.t<=0){m.t=.8+Math.random()*1.5;const a=Math.random()*7,s=Math.random()<.3?0:55;m.vx=Math.cos(a)*s;m.vy=Math.sin(a)*s;}}
     m.x+=m.vx*dt;m.y+=m.vy*dt;const lim=R0-10;m.x=Math.max(-lim,Math.min(lim,m.x));m.y=Math.max(-lim,Math.min(lim,m.y));
+    if(mode==='clean'){const d=Math.hypot(m.x,m.y),L=arenaR-20;if(d>L){m.x*=L/d;m.y*=L/d;}} // job-site critters stay inside the fence
     if(Math.hypot(m.vx,m.vy)>3)m.a=Math.atan2(m.vy,m.vx);}}
 function buildProps(){props=[];pgrid=new Map();propEaten=[];spawnCritters();
   for(let i=BMIN;i<=BMAX;i++)for(let j=BMIN;j<=BMAX;j++)for(const p of genBlock(i,j).props){
@@ -212,7 +213,7 @@ let lastProps=[],lastLo=false;
 function drawPropOutlines(z){const list=lastProps,lo=lastLo;
   if(player&&player.alive&&state!=='menu'){const a=.75+.25*Math.sin(clock*5);
     ctx.save();ctx.lineJoin='round';
-    const eds=list.filter(p=>!(lo&&p.r<10)&&player.r>p.r*EAT);ctx.setLineDash([]);
+    const eds=list.filter(p=>!(lo&&p.r<10)&&!p.out&&player.r>p.r*EAT);ctx.setLineDash([]);
     ctx.beginPath();for(const p of eds)outlineProp(ctx,p,z);
     ctx.strokeStyle=rgba(PAL.edible,a);ctx.lineWidth=Math.max(2.5,3/z)*PAL.w;ctx.setLineDash([9/z+2,5/z+1]);ctx.lineDashOffset=-clock*12/z;ctx.stroke();ctx.setLineDash([]);
     ctx.restore();}}

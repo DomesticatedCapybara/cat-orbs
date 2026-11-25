@@ -9,7 +9,7 @@ function tipsTick(dt){
   if(tipCool>0){tipCool-=dt;return;}
   // the moments that trigger each tip
   if(time>.5)tip('steer',phone?'Drag anywhere to steer. Lift your thumb and you keep cruising.':(SET.pc==='keys'?'Steer with WASD or the arrow keys. Press Space to dash.':'Move the mouse to steer. Press Space to dash.'));
-  if(time>5&&lastProps.some(p=>player.r>p.r*EAT))tip('outline','Things with a glowing dotted outline are small enough to eat. Go gobble!');
+  if(time>5&&lastProps.some(p=>!p.out&&player.r>p.r*EAT))tip('outline','Things with a glowing dotted outline are small enough to eat. Go gobble!');
   if(mode!=='solo'&&time>GRACE&&cats.some(c=>c.alive&&!c.player&&canEat(c,player)&&Math.abs(c.x-player.x)<W/2/cam.z&&Math.abs(c.y-player.y)<H/2/cam.z))tip('danger','A spiky ring means that cat can eat you. Run, or dash away!');
   if(combo>=3)tip('combo','Combo! Keep eating quickly for bonus growth.');
   if(time>22&&!dashed)tip('dash',phone?'Tap Dash for a burst of speed. It works while cruising too.':'Press Space to dash for a burst of speed.');
