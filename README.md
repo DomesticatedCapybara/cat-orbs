@@ -1,4 +1,4 @@
-# Cat Orbs: King of the Hill
+# Cat Orbs: Conquerors of Cat Earth
 
 Prowl the city, gobble treats and absorb every cat smaller than you. Only one orb can remain.
 
