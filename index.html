@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1d2027">
-<title>Cat Orbs: King of the Hill v0.1</title>
+<title>Cat Orbs: King of the Hill v0.4</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
@@ -122,7 +122,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
         <h1>Cat Orbs: <em>King of the Hill</em></h1>
         <p><b>This preview can't run games.</b> iMessage and Files show HTML files in a quick preview that turns games off.</p>
         <p>To play on iPhone, open the game's <b>web link</b> in <b>Safari</b>. Ask whoever sent you this file for the link.</p>
-        <p style="font-size:13px;opacity:.6">Version 0.1</p>
+        <p style="font-size:13px;opacity:.6">Version 0.4</p>
       </div>
     </noscript>
     <h1>Cat Orbs: <em>King of the Hill</em></h1>
@@ -132,10 +132,11 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
       <ul>
         <li class="pc">Steer with the <b>mouse</b> or <span class="key">WASD</span> / arrows. <span class="key">Space</span> to dash</li>
         <li class="ph">Drag anywhere with your thumb to steer (a joystick appears). Tap <b>Dash</b> for a burst of speed</li>
-        <li>Small treats (kibble, fish, yarn) feed any cat. Big treats (boxes, tuna cans, fish trucks) need a bigger cat and give far more</li>
+        <li>Twelve kinds of treats, from kibble and toy mice up to milk tankers, fish markets and a mountain of yarn. Bigger ones are worth far more</li>
         <li>A red ring on a treat means you are too small for it, and the number shows the size you need</li>
-        <li>You can only absorb cats <b>smaller</b> than you, and you grow by their size</li>
-        <li>Bigger cats are slower, and the city edge closes in after 45 seconds</li>
+        <li>To absorb a cat or a treat you must be at least <b>1.2× its size</b>. You grow by its size</li>
+        <li>The whole city is open. When only 5 cats are left, a final circle slowly closes in to bring them together</li>
+        <li>Bigger cats are slower, so small cats can still escape</li>
         <li>The last cat standing swells to fill the whole city</li>
         <li>Unlock new cat colours by playing, absorbing cats and winning</li>
       </ul>
@@ -154,7 +155,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
     </div>
     <p id="devNote"></p>
     <div class="btns sticky"><button class="big" id="playBtn">Play</button></div>
-    <p style="font-size:12px;opacity:.55;margin:4px 0 0">Version 0.1</p>
+    <p style="font-size:12px;opacity:.55;margin:4px 0 0">Version 0.4</p>
   </div>
 </div>
 
@@ -231,27 +232,44 @@ const isUnl=f=>{if(!f.req)return true;const[k,v]=f.req;return k==='top'?prog.bes
 const NAMES=['Mochi','Biscuit','Pumpkin','Miso','Tofu','Pepper','Ziggy','Luna','Noodle','Waffles','Oreo','Ginger','Smokey','Cleo','Pickles','Bean','Socks','Nacho','Mittens','Olive','Pudding','Taco','Juniper','Frodo','Basil','Cocoa','Marble','Sushi','Toast','Peanut','Figaro','Hazel','Bubbles','Clover','Dumpling','Kiwi','Maple','Nugget','Pixel','Rascal','Sprout','Truffle','Whiskers','Yuzu','Zorro'];
 
 // ---------- world ----------
-const R0=2800,RMIN=330,SHRINK_AT=45,SHRINK_DUR=210;
+const R0=2800; // the whole city is open until only a few cats remain
+const FINAL_N=5,FINAL_SPEED=16,FINAL_MIN=450; // final circle: starts at 5 cats left, shrinks 16 units/sec
 let cats=[],player=null,eaten=[],parts=[],floats=[],foods=[];
-let state='menu',time=0,clock=0,cam={x:0,y:0,z:1},arenaR=R0,king=null,finT=0,endShown=false,recorded=false;
+let finalOn=false,state='menu',time=0,clock=0,cam={x:0,y:0,z:1},arenaR=R0,king=null,finT=0,endShown=false,recorded=false;
 let mouse={x:0,y:0,active:false},keys={},lbTimer=0,toastT=0,myCats=0,myTreats=0,wasUnl=[];
 
 // treats: small ones anyone can eat; big ones need a cat bigger than the treat
+// Absorbables, tiny to colossal. n = how many at full city size, rate = respawns per second.
+// A cat must be EAT x bigger than an item (or another cat) to absorb it.
+const EAT=1.2;
 const FOODT=[
- {k:'kibble',v:6,r:7,w:60,glow:'#ffd166'},
- {k:'fish',v:10,r:11,w:28,glow:'#5ef2ff'},
- {k:'yarn',v:14,r:13,w:12,glow:'#ff8ae2'},
- {k:'box',v:24,r:30,w:5,glow:'#ffe08a',big:1},
- {k:'tuna',v:40,r:52,w:2.2,glow:'#9dffb0',big:1},
- {k:'truck',v:70,r:88,w:.9,glow:'#ffb35c',big:1}];
-const FW=FOODT.reduce((s,f)=>s+f.w,0);
-const FOOD_DENSITY=720/(Math.PI*R0*R0);
-function spawnFood(){let t=Math.random()*FW,ft=FOODT[0];for(const f of FOODT){if(t<f.w){ft=f;break;}t-=f.w;}
-  const a=Math.random()*Math.PI*2,d=Math.sqrt(Math.random())*(arenaR-40);
-  return{x:Math.cos(a)*d,y:Math.sin(a)*d,T:ft,r:ft.r,v:ft.v,rot:Math.random()*7,ph:Math.random()*7,hue:Math.floor(Math.random()*3)};}
+ {k:'kibble', v:6,  r:7,  n:300,rate:25, glow:'#ffd166'},
+ {k:'fish',   v:10, r:11, n:140,rate:12, glow:'#5ef2ff'},
+ {k:'yarn',   v:14, r:13, n:70, rate:6,  glow:'#ff8ae2'},
+ {k:'mouse',  v:18, r:17, n:50, rate:4,  glow:'#e0d7ff'},
+ {k:'box',    v:26, r:26, n:34, rate:2,  glow:'#ffe08a'},
+ {k:'bed',    v:34, r:34, n:24, rate:1.2,glow:'#c9a8ff'},
+ {k:'tuna',   v:44, r:46, n:16, rate:.8, glow:'#9dffb0'},
+ {k:'tower',  v:58, r:62, n:11, rate:.5, glow:'#ffcf9e'},
+ {k:'truck',  v:76, r:84, n:7,  rate:.3, glow:'#ffb35c'},
+ {k:'tanker', v:100,r:110,n:5,  rate:.2, glow:'#a8d8ff'},
+ {k:'market', v:136,r:150,n:3,  rate:.12,glow:'#ff9e9e'},
+ {k:'yarnmtn',v:180,r:200,n:2,  rate:.08,glow:'#ffa8f0'}];
+FOODT.forEach(T=>{T.big=T.r>=26;});
+// spread items evenly: try several spots and keep the one farthest from same-tier and big items
+function placeFood(T){
+  const same=foods.filter(o=>o.T===T),bigs=T.big?foods.filter(o=>o.T.big&&o.T!==T):[];
+  const tries=T.n>100?4:T.big?14:8;let best=null,bs=-1e9;
+  for(let i=0;i<tries;i++){const a=Math.random()*Math.PI*2,d=Math.sqrt(Math.random())*Math.max(0,arenaR-T.r-30);
+    const x=Math.cos(a)*d,y=Math.sin(a)*d;let m=1e9;
+    for(const o of same){const q=Math.hypot(o.x-x,o.y-y)-o.r-T.r;if(q<m)m=q;}
+    for(const o of bigs){const q=(Math.hypot(o.x-x,o.y-y)-o.r-T.r)*1.5;if(q<m)m=q;}
+    if(m>bs){bs=m;best={x,y};}}
+  return{x:best.x,y:best.y,T,r:T.r,v:T.v,rot:Math.random()*7,ph:Math.random()*7,hue:Math.floor(Math.random()*3)};}
+const START_R=22,AI_COUNT=45;
 const PLAYER_BONUS=1.35; // the player's cat grows a bit faster from treats
-const canEatF=(c,f)=>!f.T.big||c.r>f.r*1.1;
-const needF=f=>Math.ceil(f.r*1.1+1);
+const canEatF=(c,f)=>c.r>f.r*EAT;
+const needF=f=>Math.floor(f.r*EAT)+1;
 
 // ---------- city ----------
 const CELL=460,ROAD=80,BLK=CELL-ROAD;
@@ -384,13 +402,13 @@ function shade(hex,amt){const n=parseInt(hex.slice(1),16);const c=v=>Math.max(0,
 // ---------- treats ----------
 const YARN=['#ff6f59','#7fb8ff','#c792ea'];
 function drawFood(f,z){
-  const T=f.T,r=f.r,bob=Math.sin(clock*2.6+f.ph)*Math.max(3,r*.18),lift=r*.45+4;
+  const T=f.T,r=f.r,amp=Math.min(10,Math.max(3,r*.18)),bob=Math.sin(clock*2.6+f.ph)*amp,lift=Math.min(r*.45,14)+4;
   const locked=player&&player.alive&&!canEatF(player,f);
   ctx.save();ctx.translate(f.x,f.y);
-  const sh=1-(bob/(r*.18+3))*.15;ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(0,r*.5,r*.85*sh,r*.25*sh,0,0,7);ctx.fill();
+  const sh=1-(bob/amp)*.15;ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(0,r*.5,r*.85*sh,r*.25*sh,0,0,7);ctx.fill();
   ctx.translate(0,-lift+bob);
-  ctx.globalAlpha=.22+.08*Math.sin(clock*4+f.ph);circ(ctx,0,0,r*1.75,locked?'#ff6f59':T.glow);ctx.globalAlpha=1;
-  ctx.lineWidth=Math.max(2.5,2.5/z);ctx.strokeStyle=T.glow;ctx.lineJoin='round';
+  ctx.globalAlpha=.22+.08*Math.sin(clock*4+f.ph);circ(ctx,0,0,r*(r>40?1.3:1.75),locked?'#ff6f59':T.glow);ctx.globalAlpha=1;
+  ctx.lineWidth=Math.max(2.5,2.5/z,r*.04);ctx.strokeStyle=T.glow;ctx.lineJoin='round';
   if(T.k==='kibble'){ctx.beginPath();ctx.arc(0,0,r,0,7);ctx.fillStyle='#c7843f';ctx.fill();ctx.stroke();circ(ctx,-r*.3,-r*.3,r*.4,'#e6a865');}
   else if(T.k==='fish'){ctx.rotate(f.rot);ctx.beginPath();ctx.ellipse(0,0,r,r*.5,0,0,7);ctx.moveTo(r*.8,0);ctx.lineTo(r*1.4,-r*.5);ctx.lineTo(r*1.4,r*.5);ctx.closePath();
     ctx.fillStyle='#8fc6e0';ctx.fill();ctx.stroke();circ(ctx,-r*.55,-r*.1,r*.12,'#1b2430');}
@@ -402,11 +420,26 @@ function drawFood(f,z){
   else if(T.k==='tuna'){ctx.beginPath();ctx.arc(0,0,r,0,7);ctx.fillStyle='#c5ccd6';ctx.fill();ctx.stroke();
     circ(ctx,0,0,r*.86,'#3f7fd8');circ(ctx,0,0,r*.6,'#e9eef4');ctx.fillStyle='#1f3f6e';ctx.font=`800 ${r*.34}px "Baloo 2",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('TUNA',0,r*.04);
     ctx.strokeStyle='#9aa3ae';ctx.lineWidth=r*.05;ctx.beginPath();ctx.ellipse(0,-r*.35,r*.18,r*.1,0,0,7);ctx.stroke();}
+  else if(T.k==='mouse'){ctx.rotate(f.rot);ctx.beginPath();ctx.ellipse(0,0,r,r*.62,0,0,7);ctx.fillStyle='#b9b4c7';ctx.fill();ctx.stroke();
+    circ(ctx,-r*.55,-r*.5,r*.3,'#f2a5c0');circ(ctx,-r*.55,r*.5,r*.3,'#f2a5c0');circ(ctx,-r*.85,-r*.15,r*.08,'#1d2733');circ(ctx,-r*.85,r*.15,r*.08,'#1d2733');
+    ctx.strokeStyle='#8e879e';ctx.lineWidth=r*.12;ctx.beginPath();ctx.moveTo(r*.9,0);ctx.quadraticCurveTo(r*1.5,r*.6,r*1.8,0);ctx.stroke();}
+  else if(T.k==='bed'){ctx.beginPath();ctx.arc(0,0,r,0,7);ctx.fillStyle='#7a5cc2';ctx.fill();ctx.stroke();
+    circ(ctx,0,r*.06,r*.7,'#f4e4c1');circ(ctx,-r*.18,-r*.12,r*.32,'rgba(255,255,255,.35)');}
+  else if(T.k==='tower'){rr(ctx,-r,-r,r*2,r*2,r*.15);ctx.fillStyle='#a67c52';ctx.fill();ctx.stroke();
+    for(const[a,b,q]of[[-.45,-.45,.42],[.45,.4,.48],[.5,-.5,.3],[-.4,.5,.3]]){circ(ctx,a*r+r*.05,b*r+r*.06,q*r,'rgba(0,0,0,.25)');circ(ctx,a*r,b*r,q*r,'#e3d6c2');circ(ctx,a*r,b*r,q*r*.25,'#c9a46a');}}
+  else if(T.k==='tanker'){ctx.rotate(Math.sin(f.ph)*.3);rr(ctx,-r*1.3,-r*.55,r*2.6,r*1.1,r*.5);ctx.fillStyle='#eef5fc';ctx.fill();ctx.stroke();
+    ctx.fillStyle='#3f7fd8';rr(ctx,r*.75,-r*.5,r*.5,r,r*.12);ctx.fill();ctx.fillStyle='#3f7fd8';ctx.font=`800 ${r*.42}px "Baloo 2",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('MILK',-r*.25,r*.04);}
+  else if(T.k==='market'){rr(ctx,-r,-r*.8,r*2,r*1.6,r*.1);ctx.fillStyle='#8b5a3c';ctx.fill();ctx.stroke();
+    for(let i=0;i<8;i++){ctx.fillStyle=i%2?'#fff4e0':'#e8453c';ctx.fillRect(-r+i*r/4,-r*.8,r/4,r*.6);}
+    ctx.fillStyle='#d9cbb0';ctx.fillRect(-r*.9,0,r*1.8,r*.7);
+    for(let i=0;i<4;i++){ctx.save();ctx.translate(-r*.6+i*r*.4,r*.35);ctx.fillStyle=['#8fc6e0','#ff8a5c','#9dd99a','#c5ccd6'][i];ctx.beginPath();ctx.ellipse(0,0,r*.15,r*.08,0,0,7);ctx.fill();ctx.restore();}}
+  else if(T.k==='yarnmtn'){for(const[a,b,q,c]of[[-.35,.25,.6,0],[.38,.22,.55,1],[0,-.3,.62,2]]){ctx.beginPath();ctx.arc(a*r,b*r,q*r,0,7);ctx.fillStyle=YARN[(c+f.hue)%3];ctx.fill();ctx.stroke();
+      ctx.save();ctx.strokeStyle='rgba(255,255,255,.45)';ctx.lineWidth=Math.max(1.5,r*.015);ctx.translate(a*r,b*r);ctx.rotate(f.rot+c);for(const k of[.2,.5,.8]){ctx.beginPath();ctx.ellipse(0,0,q*r*.9,q*r*k,0,0,7);ctx.stroke();}ctx.restore();}}
   else{ctx.rotate(Math.sin(f.ph)*.3);rr(ctx,-r*1.3,-r*.7,r*2.6,r*1.4,r*.2);ctx.fillStyle='#f4f1ea';ctx.fill();ctx.stroke();
     ctx.fillStyle='#3f9bd8';rr(ctx,r*.55,-r*.62,r*.65,r*1.24,r*.14);ctx.fill();ctx.fillStyle='#1d2733';ctx.fillRect(r*.95,-r*.5,r*.18,r);
     ctx.save();ctx.translate(-r*.3,0);ctx.fillStyle='#ff8a5c';ctx.beginPath();ctx.ellipse(0,0,r*.6,r*.3,0,0,7);ctx.moveTo(-r*.5,0);ctx.lineTo(-r*.85,-r*.28);ctx.lineTo(-r*.85,r*.28);ctx.closePath();ctx.fill();circ(ctx,r*.35,-r*.05,r*.06,'#1d2733');ctx.restore();}
   ctx.restore();
-  if(locked&&T.big){ctx.save();ctx.translate(f.x,f.y-lift+bob);ctx.strokeStyle='#ff6f59';ctx.lineWidth=Math.max(3,3/z);ctx.setLineDash([8/z+4,6/z+3]);
+  if(locked){ctx.save();ctx.translate(f.x,f.y-lift+bob);ctx.strokeStyle='#ff6f59';ctx.lineWidth=Math.max(3,3/z);ctx.setLineDash([8/z+4,6/z+3]);
     ctx.beginPath();ctx.arc(0,0,r*1.55,0,7);ctx.stroke();ctx.setLineDash([]);
     const fs=Math.max(12/z,r*.38);ctx.font=`800 ${fs}px "Baloo 2",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.lineWidth=fs*.25;ctx.strokeStyle='rgba(10,12,16,.85)';ctx.strokeText(needF(f),0,-r*1.55-fs*.6);ctx.fillStyle='#ffb3a6';ctx.fillText(needF(f),0,-r*1.55-fs*.6);ctx.restore();}
@@ -415,26 +448,31 @@ function drawFood(f,z){
 // ---------- game flow ----------
 function start(){
   if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
-  cats=[];eaten=[];parts=[];floats=[];time=0;arenaR=R0;king=null;finT=0;endShown=false;recorded=false;myCats=0;myTreats=0;
+  cats=[];eaten=[];parts=[];floats=[];time=0;arenaR=R0;finalOn=false;king=null;finT=0;endShown=false;recorded=false;myCats=0;myTreats=0;
   wasUnl=FUR.map(isUnl);
-  foods=[];for(let i=0;i<720;i++)foods.push(spawnFood());
+  foods=[];for(const T of FOODT.slice().reverse())for(let i=0;i<T.n;i++)foods.push(placeFood(T));
   const nm=($('nameIn').value.trim()||'You').slice(0,14);
   const pf=isUnl(FUR[prog.pick]||FUR[0])?FUR[prog.pick]:FUR[0];
-  player=makeCat(0,0,22,nm,true,pf);cats.push(player);
+  // every cat (you included) starts the same size at evenly spread spots across the city
+  const spots=[];
+  for(let i=0;i<=AI_COUNT;i++){let best=null,bs=-1;
+    for(let k=0;k<40;k++){const a=Math.random()*Math.PI*2,d=Math.sqrt(Math.random())*(R0-180),x=Math.cos(a)*d,y=Math.sin(a)*d;
+      let m=R0-Math.hypot(x,y);for(const p of spots){const q=Math.hypot(p.x-x,p.y-y);if(q<m)m=q;}
+      if(m>bs){bs=m;best={x,y};}}
+    spots.push(best);}
+  spots.sort(()=>Math.random()-.5);
+  const ps=spots.pop();
+  player=makeCat(ps.x,ps.y,START_R,nm,true,pf);cats.push(player);
   const names=NAMES.slice().sort(()=>Math.random()-.5);
-  const plan=[[14,9,15],[16,17,27],[10,30,44],[5,50,72]];let n=0;
-  for(const[c,a,b]of plan)for(let i=0;i<c;i++){let x,y,tries=0;const r=rnd(a,b);
-    do{const ang=Math.random()*Math.PI*2,d=Math.sqrt(Math.random())*(R0-120);x=Math.cos(ang)*d;y=Math.sin(ang)*d;tries++;}
-    while(tries<40&&(Math.hypot(x,y)<(r>22?700:200)||cats.some(o=>Math.hypot(o.x-x,o.y-y)<o.r+r+40)));
-    cats.push(makeCat(x,y,r,names[n++%names.length],false));}
-  cam={x:0,y:0,z:1};state='play';document.body.classList.add('playing');
+  spots.forEach((p,i)=>cats.push(makeCat(p.x,p.y,START_R,names[i%names.length],false)));
+  cam={x:player.x,y:player.y,z:1};state='play';document.body.classList.add('playing');
   $('menu').hidden=true;$('end').hidden=true;['stats','board','mini'].forEach(i=>$(i).hidden=false);
   joy.id=null;if(!phone&&'ontouchstart' in window)$('dash').style.display='block';
   toast('Gobble treats, absorb smaller cats!');
 }
 function toast(t){const el=$('toast');el.textContent=t;el.style.opacity=1;toastT=2.2;}
 const speedOf=c=>250*Math.pow(22/c.r,.38)*(c.dash>0?2.1:1);
-const canEat=(a,b)=>a.r>b.r*1.08;
+const canEat=(a,b)=>a.r>b.r*EAT;
 function tryDash(c){if(c.cd<=0&&c.alive){c.dash=.35;c.cd=c.player?2.5:3.5;}}
 
 function record(place,won){
@@ -489,7 +527,6 @@ function absorb(a,b){
 
 function update(dt){
   time+=dt;
-  if(state!=='finale'&&time>SHRINK_AT){const k=Math.min(1,(time-SHRINK_AT)/SHRINK_DUR);arenaR=R0-(R0-RMIN)*(1-Math.pow(1-k,1.6));}
   for(const c of cats){if(!c.alive)continue;
     c.dash=Math.max(0,c.dash-dt);c.cd=Math.max(0,c.cd-dt);c.wt-=dt;c.blink-=dt;if(c.blink<-.12)c.blink=rnd(2,6);
     if(c.player&&c===player&&state!=='dead')playerInput(c);
@@ -507,17 +544,23 @@ function update(dt){
     if(Math.hypot(f.x,f.y)>arenaR+f.r){foods.splice(i,1);continue;}
     for(const c of live){if(!c.alive)continue;const dx=f.x-c.x,dy=f.y-c.y,reach=c.r+f.r;
       if(Math.abs(dx)>reach||Math.abs(dy)>reach||!canEatF(c,f))continue;
-      if(Math.hypot(dx,dy)<(f.T.big?c.r-f.r*.4:c.r+f.r*.3)){
+      if(Math.hypot(dx,dy)<(f.r<14?c.r+f.r*.3:c.r-f.r*.4)){
         c.t=Math.sqrt(c.t*c.t+f.v*f.v*(c.player?PLAYER_BONUS:1));c.pulse=.25;foods.splice(i,1);
         if(f.T.big)burst(f.x,f.y,f.T.glow,10);
         if(c.player){myTreats++;floats.push({x:f.x,y:f.y-f.r,t:f.T.big?1:.6,txt:f.T.big?'+'+Math.round(f.v/2):'+'});}
         break;}}}
-  const want=Math.round(FOOD_DENSITY*Math.PI*arenaR*arenaR);
-  for(let n=0;n<5&&foods.length<want;n++)foods.push(spawnFood());
+  const cnt=new Map();for(const f of foods)cnt.set(f.T,(cnt.get(f.T)||0)+1);
+  const af=(arenaR/R0)**2;
+  for(const T of FOODT){const want=Math.round(T.n*af);let have=cnt.get(T)||0;
+    let k=Math.floor(T.rate*dt+Math.random());while(k-->0&&have<want){foods.push(placeFood(T));have++;}}
   for(const e of eaten)e.k+=dt*4;eaten=eaten.filter(e=>e.k<1);
   for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.92;p.vy*=.92;p.life-=dt;}parts=parts.filter(p=>p.life>0);
   for(const f of floats){f.t-=dt;f.y-=40*dt;}floats=floats.filter(f=>f.t>0);
   const alive=live.filter(c=>c.alive);
+  // final circle: once only a few cats are left, the edge slowly closes to bring them together
+  if(!finalOn&&state!=='finale'&&alive.length<=FINAL_N&&alive.length>1){finalOn=true;toast(`Final ${alive.length}! The circle is closing in`);}
+  if(finalOn&&state!=='finale'){const big=alive.reduce((m,c)=>Math.max(m,c.r),0),target=Math.max(FINAL_MIN,big*1.4);
+    if(arenaR>target)arenaR=Math.max(target,arenaR-FINAL_SPEED*dt);}
   // last cat standing: start the finale, where the king swells to fill the city
   if(alive.length===1&&!king){king=alive[0];finT=0;
     if(king.player){record(1,true);}
@@ -539,7 +582,7 @@ const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
 const esc=s=>s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 function hud(alive){
   $('sz').textContent=player.alive?Math.round(player.r):'—';$('left').textContent=alive.length;
-  $('hill').textContent=state==='finale'?'Victory!':time<SHRINK_AT?`City edge closes in ${fmt(SHRINK_AT-time)}`:arenaR>RMIN+1?'The city edge is closing in!':'Final showdown';
+  $('hill').textContent=state==='finale'?'Victory!':finalOn?'Final circle closing in!':`Match time ${fmt(time)} · final circle at ${FINAL_N} cats`;
   const top=alive.slice().sort((a,b)=>b.r-a.r);let rows=top.slice(0,5);
   if(player.alive&&!rows.includes(player))rows=rows.slice(0,4).concat(player);
   $('lb').innerHTML=rows.map(c=>`<li class="${c.player?'me':''}" value="${top.indexOf(c)+1}"><span>${esc(c.name)}</span><span>${Math.round(c.r)}</span></li>`).join('');
@@ -552,7 +595,7 @@ function render(){
   const z=cam.z,[vl,vt,vw,vh]=worldView(z);
   drawBackground(z,vl,vt,vw,vh);
   ctx.fillStyle='rgba(8,10,14,.72)';ctx.beginPath();ctx.rect(vl,vt,vw,vh);ctx.arc(0,0,arenaR,0,Math.PI*2);ctx.fill('evenodd');
-  ctx.strokeStyle=time>SHRINK_AT&&state!=='finale'?'#ff6f59':'rgba(255,244,224,.55)';ctx.lineWidth=6/z;ctx.setLineDash([24/z,16/z]);
+  ctx.strokeStyle=finalOn&&state!=='finale'?'#ff6f59':'rgba(255,244,224,.55)';ctx.lineWidth=6/z;ctx.setLineDash([24/z,16/z]);
   ctx.beginPath();ctx.arc(0,0,arenaR,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
   const pad=120;
   for(const f of foods)if(f.x>vl-pad&&f.x<vl+vw+pad&&f.y>vt-pad&&f.y<vt+vh+pad)drawFood(f,z);
@@ -578,8 +621,8 @@ function render(){
 function drawMini(){
   if(mini.hidden)return;const s=mini.width,h=s/2,k=(h-6)/R0;
   mctx.setTransform(1,0,0,1,0,0);mctx.clearRect(0,0,s,s);
-  mctx.strokeStyle=time>SHRINK_AT?'#ff6f59':'rgba(255,244,224,.5)';mctx.lineWidth=1.5*DPR;mctx.beginPath();mctx.arc(h,h,arenaR*k,0,7);mctx.stroke();
-  for(const f of foods)if(f.T.big){mctx.fillStyle=f.T.glow;mctx.fillRect(h+f.x*k-DPR,h+f.y*k-DPR,2*DPR,2*DPR);}
+  mctx.strokeStyle=finalOn&&state!=='finale'?'#ff6f59':'rgba(255,244,224,.5)';mctx.lineWidth=1.5*DPR;mctx.beginPath();mctx.arc(h,h,arenaR*k,0,7);mctx.stroke();
+  for(const f of foods)if(f.T.big){mctx.fillStyle=f.T.glow;mctx.globalAlpha=.8;mctx.beginPath();mctx.arc(h+f.x*k,h+f.y*k,Math.max(1.2*DPR,f.r*k),0,7);mctx.fill();mctx.globalAlpha=1;}
   for(const c of cats){if(!c.alive)continue;
     mctx.fillStyle=c.player?'#ffffff':player.alive?(canEat(player,c)?'#7fe0b4':canEat(c,player)?'#ff6f59':'#e9dcc6'):'#e9dcc6';
     mctx.beginPath();mctx.arc(h+c.x*k,h+c.y*k,Math.max(c.player?3*DPR:1.6*DPR,c.r*k),0,7);mctx.fill();}
