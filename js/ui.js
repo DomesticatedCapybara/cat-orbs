@@ -19,7 +19,7 @@ function buildFurs(){
 function radios(name,val,fn){for(const r of document.querySelectorAll(`input[name=${name}]`)){r.checked=r.value===String(val);r.onchange=()=>{fn(r.value);saveSet();if(typeof applyPalette==='function')applyPalette();syncSettings();};}}
 function syncSettings(){$('mvol').value=SET.mv;$('svol').value=SET.sv;$('mvolV').textContent=SET.mv;$('svolV').textContent=SET.sv;
   radios('cb',SET.cb,v=>SET.cb=v);radios('diff',SET.diff,v=>SET.diff=v);radios('pu',SET.pu?1:0,v=>SET.pu=v==='1');
-  radios('weather',SET.weather,v=>SET.weather=v);radios('lite',SET.lite?1:0,v=>{SET.lite=v==='1';resize();});radios('tod',SET.tod,v=>SET.tod=v);
+  radios('map',SET.map,v=>SET.map=v);radios('weather',SET.weather,v=>SET.weather=v);radios('pc',SET.pc,v=>{SET.pc=v;applyControls();});radios('lite',SET.lite?1:0,v=>{SET.lite=v==='1';resize();});radios('tod',SET.tod,v=>SET.tod=v);
   if(typeof PAL!=='undefined')$('cbDemo').innerHTML=`<span><i style="background:${PAL.edible}"></i>Can eat</span><span><i style="background:${PAL.danger}"></i>Danger</span><span><i style="background:${PAL.gold}"></i>Target</span>`;}
 function openSettings(){syncSettings();$('setOv').hidden=false;$('progNote').textContent='';}
 for(const[id,key]of[['mvol','mv'],['svol','sv']])$(id).addEventListener('input',e=>{SET[key]=+e.target.value;$(id+'V').textContent=SET[key];saveSet();audioUnlock();applyVolumes();if(key==='sv')snd.pick(12);});
@@ -63,7 +63,11 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(document.activeEle
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 addEventListener('blur',()=>{keys={};joy.id=null;});
 $('dash').addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();if(state==='play'||(state==='finale'&&king===player))tryDash(player);});
-setInterval(()=>{if(player)$('dash').classList.toggle('cool',player.cd>0);},100);
+// dash charges: pips light up per charge; the ring and bar show the next charge filling
+const dashPips=[...document.querySelectorAll('#dash .pips i')],hudPips=[...document.querySelectorAll('#dashHud .pips i')];
+setInterval(()=>{if(!player||player.charges===undefined)return;const n=player.charges,p=n>=DASH_MAX?1:Math.min(1,player.chargeT/dashNeed(player));
+  dashPips.forEach((e,i)=>e.classList.toggle('on',i<n));hudPips.forEach((e,i)=>e.classList.toggle('on',i<n));
+  $('dash').classList.toggle('cool',n===0);$('dash').style.setProperty('--p',p.toFixed(3));$('dashHud').querySelector('.bar i').style.width=(p*100).toFixed(1)+'%';},50);
 let lastStart=0;
 function safeStart(e){audioUnlock();if(e&&e.cancelable)e.preventDefault();const n=Date.now();if(n-lastStart<600)return;lastStart=n;
   try{start();}catch(err){showErr('start: '+(err&&err.message)+'\n'+((err&&err.stack)||'').split('\n').slice(0,3).join('\n'));}}
@@ -71,6 +75,13 @@ for(const id of['playBtn','againBtn']){$(id).addEventListener('click',safeStart)
 $('copyBtn').addEventListener('click',e=>copyResult(e.currentTarget));
 $('watchBtn').addEventListener('click',()=>{$('end').hidden=true;toast('Spectating the biggest cat');});
 $('menuBtn').addEventListener('click',toMenu);
+$('storyNext').addEventListener('click',()=>{if(storyI<storyPages.length-1){storyI++;storyPage();}else storyEnd();});
+$('storySkip').addEventListener('click',storyEnd);
+$('nextBtn').addEventListener('click',()=>{const i=LEVELS.indexOf(LV);if(i+1<LEVELS.length&&campUnl(i+1)){camp.sel=i+1;saveCamp();setMode('camp');}safeStart();});
+addEventListener('resize',()=>{if(mode==='camp'&&!$('menu').hidden)drawCampMap();});
+$('campMap').addEventListener('click',e=>{const cv=$('campMap'),R=cv.getBoundingClientRect(),S=R.width,k=S/(PLANET_R*2.3);let best=-1,bd=30;
+  LEVELS.forEach((L,i)=>{const d=Math.hypot(e.clientX-R.left-(S/2+L.pin[0]*k),e.clientY-R.top-(S/2+L.pin[1]*k));if(d<bd){bd=d;best=i;}});
+  if(best>=0)$('campList').children[best].click();});
 $('pauseBtn').addEventListener('click',e=>{e.stopPropagation();e.currentTarget.blur();setPause(true);});
 $('resumeBtn').addEventListener('click',()=>setPause(false));
 $('restartBtn').addEventListener('click',e=>{setPause(false);safeStart(e);});

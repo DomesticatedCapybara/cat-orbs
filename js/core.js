@@ -89,7 +89,7 @@ try{const s=JSON.parse(localStorage.getItem('catorb-prog')||'null');if(s)prog=Ob
 const saveProg=()=>{try{localStorage.setItem('catorb-prog',JSON.stringify(prog));}catch(e){}};
 // ---------- settings ----------
 // mv/sv: music and effects volume (0-100); cb: color vision; diff: rival difficulty; pu: power-ups on; weather; tod: time of day
-const SET={mv:70,sv:80,cb:'std',diff:'normal',pu:true,weather:'random',tod:'cycle',lite:false};
+const SET={mv:70,sv:80,cb:'std',diff:'normal',pu:true,map:'random',weather:'random',tod:'cycle',lite:false,pc:'keys'}; // pc: computer steering, 'keys' (WASD/arrows) or 'mouse'
 try{Object.assign(SET,JSON.parse(localStorage.getItem('catorb-settings')||'{}'));}catch(e){}
 const saveSet=()=>{try{localStorage.setItem('catorb-settings',JSON.stringify(SET));}catch(e){}};
 // ---------- color vision palettes ----------
@@ -101,6 +101,8 @@ const PALS={
   hc:{edible:'#00f0ff',danger:'#ff2d55',dangerLite:'#ff9fb3',gold:'#ffe600',w:1.6}};
 let PAL=PALS[SET.cb]||PALS.std;
 const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return`rgba(${n>>16},${n>>8&255},${n&255},${a})`;};
+function applyControls(){document.body.classList.toggle('keyctl',SET.pc==='keys');}
+applyControls();
 function applyPalette(){PAL=PALS[SET.cb]||PALS.std;const r=document.documentElement.style;r.setProperty('--edible',PAL.edible);r.setProperty('--danger',PAL.danger);r.setProperty('--gold',PAL.gold);}
 applyPalette();
 const isUnl=f=>{if(!f.req)return true;const[k,v]=f.req;return k==='top'?prog.best<=v:prog[k]>=v;};

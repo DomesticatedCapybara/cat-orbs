@@ -13,12 +13,10 @@ function render(){
   drawPropOutlines(z);
   for(const f of foods)if(f.x>vl-pad&&f.x<vl+vw+pad&&f.y>vt-pad&&f.y<vt+vh+pad)drawFood(f,z);
   for(const u of powerups)if(u.alive&&u.x>vl-pad&&u.x<vl+vw+pad&&u.y>vt-pad&&u.y<vt+vh+pad)drawPU(u,z);
-  for(const e of foodEaten)suck(e,()=>drawFood(e.p,z));
-  for(const e of eaten)suck(e,()=>drawCat(ctx,e.c,e.x,e.y,e.r));
   const vis=cats.filter(c=>c.alive&&c.x+c.r*1.3>vl&&c.x-c.r*1.3<vl+vw&&c.y+c.r*1.3>vt&&c.y-c.r*1.3<vt+vh).sort((a,b)=>a.r-b.r);
   for(const c of vis){
     if(c.dash>0){ctx.fillStyle='rgba(255,244,224,.2)';ctx.beginPath();ctx.arc(c.x-c.vx*.06,c.y-c.vy*.06,c.r,0,7);ctx.fill();}
-    if(c.player&&mode==='koth'&&state!=='finale'&&(state==='count'||time<GRACE)){const a=.45+.35*Math.sin(clock*6);ctx.strokeStyle=`rgba(127,208,255,${a})`;ctx.lineWidth=7/z;
+    if(c.player&&mode!=='solo'&&state!=='finale'&&(state==='count'||time<GRACE)){const a=.45+.35*Math.sin(clock*6);ctx.strokeStyle=`rgba(127,208,255,${a})`;ctx.lineWidth=7/z;
       ctx.setLineDash([10/z,8/z]);ctx.lineDashOffset=-clock*30/z;ctx.beginPath();ctx.arc(c.x,c.y,c.r+16/z,0,7);ctx.stroke();ctx.setLineDash([]);}
     // shape cues for everyone: spiky ring = can eat you, dotted ring = you can eat it
     if(!c.player&&player&&player.alive&&state!=='finale'){
@@ -36,6 +34,11 @@ function render(){
         ctx.beginPath();ctx.moveTo(q,0);ctx.lineTo(-q*.6,q*.9);ctx.lineTo(-q*.2,0);ctx.lineTo(-q*.6,-q*.9);ctx.closePath();ctx.fill();ctx.restore();}}
     if(c.pulse>0){const k=Math.sin(c.pulse/.35*Math.PI);ctx.save();ctx.translate(c.x,c.y);ctx.scale(1+k*.11,1-k*.09);drawCat(ctx,c,0,0,c.r);ctx.restore();} // squash and stretch
     else drawCat(ctx,c,c.x,c.y,c.r);}
+  if(ufo&&!ufo.eaten&&state==='finale')drawUFO(ctx,ufo.x,ufo.y,ufo.r,.6+.4*Math.sin(clock*4));
+  // things being eaten fly over the cats into their mouths
+  for(const e of eaten)suck(e,()=>drawCat(ctx,e.c,e.x,e.y,e.r));
+  for(const e of propEaten)suck(e,()=>e.p.k==='ufo'?drawUFO(ctx,e.p.x,e.p.y,e.p.r,0):e.p.k==='critter'?critterDraw(ctx,e.p.c):drawProp(ctx,e.p,lastLo));
+  for(const e of foodEaten)suck(e,()=>drawFood(e.p,z));
   const tags=[];
   for(const c of vis.slice().sort((a,b)=>(b.player-a.player)||(b.r-a.r))){
     const fs=Math.max(13/z,c.r*.3);ctx.font=`700 ${fs}px "Baloo 2",sans-serif`;ctx.textAlign='center';ctx.textBaseline='top';
@@ -46,7 +49,7 @@ function render(){
     const lbl=`${c.name} · ${Math.round(c.r)}`;
     if(c.pers==='nemesis'&&player.alive){const f2=fs*.7;ctx.font=`800 ${f2}px "Baloo 2",sans-serif`;ctx.lineWidth=f2*.22;ctx.strokeText('NEMESIS',c.x,c.y+c.r*1.12+fs*1.05);ctx.fillStyle=PAL.danger;ctx.fillText('NEMESIS',c.x,c.y+c.r*1.12+fs*1.05);ctx.font=`700 ${fs}px "Baloo 2",sans-serif`;ctx.lineWidth=fs*.22;}ctx.strokeText(lbl,c.x,c.y+c.r*1.12);ctx.fillStyle=col;ctx.fillText(lbl,c.x,c.y+c.r*1.12);}
   for(const p of parts){ctx.globalAlpha=Math.min(1,p.life*2);circ(ctx,p.x,p.y,p.r/z*.8+p.r*.4,p.col);}ctx.globalAlpha=1;
-  for(const f of floats){ctx.globalAlpha=Math.min(1,f.t*1.5);ctx.font=`800 ${22/z}px "Baloo 2",sans-serif`;ctx.fillStyle=PAL.edible;ctx.textAlign='center';ctx.fillText(f.txt,f.x,f.y);}ctx.globalAlpha=1;
+  for(const f of floats){ctx.globalAlpha=Math.min(1,f.t*1.5);ctx.font=`800 ${22/z}px "Baloo 2",sans-serif`;ctx.fillStyle=f.col||PAL.edible;ctx.textAlign='center';ctx.fillText(f.txt,f.x,f.y);}ctx.globalAlpha=1;
   if(state!=='finale'||finT<FIN_CITY)drawScreenWeather(Math.min(.05,clock-(render.lt||clock)));render.lt=clock;
   drawArrows();
   if(phone&&joy.id!==null&&player.alive){ctx.setTransform(DPR,0,0,DPR,0,0);
@@ -122,11 +125,11 @@ let paused=false,cdT=0,cdShown=0;
 function countdown(dt){cdT-=dt;const n=Math.ceil(cdT);
   if(n!==cdShown&&n>0){cdShown=n;showCount(String(n));tone(520,.14,'triangle',.18);}
   if(cdT<=0){state='play';showCount('Go!');tone(880,.25,'triangle',.2);tone(1320,.3,'triangle',.12,0,.05);
-    toast(mode==='solo'?`Reach size ${SOLO_GOAL}, fast!`:`Rivals leave you alone for ${GRACE} seconds`+(nemName?`. Watch out for ${nemName}, your nemesis!`:''));}}
+    toast(mode==='solo'?`Reach size ${SOLO_GOAL}, fast!`:mode==='camp'?`${LV.name}: ${goalText(LV)}!`:`Rivals leave you alone for ${GRACE} seconds`+(nemName?`. Watch out for ${nemName}, your nemesis!`:''));}}
 function showCount(t){const e=$('count');e.textContent=t;e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop');}
 function setPause(on){if(on&&state==='menu')return;paused=on;$('pauseOv').hidden=!on;joy.id=null;keys={};
   if(on)$('pauseInfo').textContent=mode==='solo'?`Time ${fmtT(time)} · size ${Math.round(player.r)} of ${SOLO_GOAL}`:`Size ${Math.round(player.alive?player.r:0)} · ${cats.filter(c=>c.alive).length} cats left`;}
-function toMenu(){ambient('none');paused=false;$('pauseOv').hidden=true;$('end').hidden=true;buildFurs();setMode(mode);$('menu').hidden=false;state='menu';document.body.classList.remove('playing');['stats','board','mini'].forEach(i=>$(i).hidden=true);}
+function toMenu(){hideSay();ambient('none');paused=false;$('pauseOv').hidden=true;$('end').hidden=true;buildFurs();setMode(mode);$('menu').hidden=false;state='menu';document.body.classList.remove('playing');['stats','board','mini'].forEach(i=>$(i).hidden=true);}
 let errCount=0;
 let comboShown='';
 let buffShown='';

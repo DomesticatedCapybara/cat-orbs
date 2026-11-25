@@ -1,7 +1,7 @@
 // Cat Orbs: Conquerors of Cat Earth - world constants, treats, modes, medals
 // ---------- world ----------
 const R0=2800; // the whole city is open until only a few cats remain
-const FINAL_N=5,FINAL_SPEED=24,FINAL_MIN=450; // final circle: starts at 5 cats left, shrinks 24 units/sec
+const FINAL_N=5,FINAL_SPEED=24,FINAL_MIN=450,ARENA_SPEED=11; // final circle: starts at 5 cats left, shrinks 24 units/sec
 let foodEaten=[],cats=[],player=null,eaten=[],parts=[],floats=[],foods=[];
 let finalOn=false,state='menu',time=0,clock=0,cam={x:0,y:0,z:1},arenaR=R0*1.42,king=null,finT=0,endShown=false,recorded=false;
 let mouse={x:0,y:0,active:false},keys={},lbTimer=0,toastT=0,myCats=0,myTreats=0,wasUnl=[];
@@ -53,13 +53,16 @@ const dayKey=()=>'catorb-day-'+dailySeed();
 const dayLabel=()=>new Date().toLocaleDateString(undefined,{month:'short',day:'numeric'});
 const medalFor=t=>{for(const[m,lim]of MEDALS)if(t<=lim)return m;return null;};
 function loadDayBest(){try{const v=parseFloat(localStorage.getItem(dayKey()));dayBest=v>0?v:null;}catch(e){dayBest=null;}}
-try{mode=localStorage.getItem('catorb-mode')==='solo'?'solo':'koth';const b=parseFloat(localStorage.getItem('catorb-solobest'));if(b>0)soloBest=b;}catch(e){}
+try{const m0=localStorage.getItem('catorb-mode');mode=m0==='solo'||m0==='camp'?m0:'koth';const b=parseFloat(localStorage.getItem('catorb-solobest'));if(b>0)soloBest=b;}catch(e){}
 const fmtT=s=>`${Math.floor(s/60)}:${(s%60).toFixed(1).padStart(4,'0')}`;
 function setMode(m){mode=m;for(const r of document.querySelectorAll('input[name=mode]'))r.checked=r.value===m;
   try{localStorage.setItem('catorb-mode',m);}catch(e){}
   loadDayBest();
-  $('modeNote').textContent=m==='solo'?`Today's city (${dayLabel()}): reach size ${SOLO_GOAL} as fast as you can. Gold ${fmtT(GOLD_T)}, silver ${fmtT(SILVER_T)}, bronze ${fmtT(BRONZE_T)}.`
-    +(dayBest?` Today's best ${fmtT(dayBest)}.`:'')+(soloBest?` All-time best ${fmtT(soloBest)}.`:''):'46 cats, one winner. Absorb or be absorbed.';}
+  const cp=$('campPanel');if(cp){cp.hidden=m!=='camp';if(m==='camp'){buildCamp();buildStandings();}}
+  $('playBtn').textContent=m==='camp'?`Play ${LEVELS[campUnl(camp.sel)?camp.sel:0].name}`:'Play';
+  if(m==='camp'){$('modeNote').textContent=campNote();return;}
+  $('modeNote').textContent=m==='solo'?`Today's city (${dayLabel()}) is ${mapName(mapFor('solo'))}: reach size ${SOLO_GOAL} as fast as you can. Gold ${fmtT(GOLD_T)}, silver ${fmtT(SILVER_T)}, bronze ${fmtT(BRONZE_T)}.`
+    +(dayBest?` Today's best ${fmtT(dayBest)}.`:'')+(soloBest?` All-time best ${fmtT(soloBest)}.`:''):'46 cats, one winner. Absorb or be absorbed.'+(SET.map==='random'?' The map is a random continent each match.':` Map: ${mapName(SET.map)}.`);}
 const MILESTONES=[{name:'trees',need:12*1.2},{name:'cars',need:19*CAR_S*1.2},{name:'fountains',need:63*1.2},{name:'small buildings',need:95*1.2},{name:'tall buildings',need:136*1.2},{name:'whole city blocks',need:196*1.2}];
 // Combo: eat things in quick succession to build a growth bonus (up to x1.5)
 const COMBO_WINDOW=1.4;let combo=0,comboT=0,shakeA=0,slowT=0;
@@ -69,12 +72,17 @@ function comboHit(){combo=comboT>0?combo+1:1;comboT=COMBO_WINDOW;if(stats)stats.
 // ---------- King of the Hill tuning ----------
 // vis: how far rivals notice things; think: seconds between decisions; dash: how keen they are to dash; grow: how much rivals grow from food; chase: how hard they hunt you
 const DIFF={easy:{vis:.7,think:.36,dash:.45,grow:.85,chase:.7},normal:{vis:1,think:.22,dash:1,grow:1,chase:1},hard:{vis:1.3,think:.14,dash:1.5,grow:1.12,chase:1.35}};
-const D=()=>DIFF[SET.diff]||DIFF.normal;
+const D=()=>DIFF[mode==='camp'?LV.diff:SET.diff]||DIFF.normal;
 // personalities: foragers love food, hunters love prey, cowards flee early; one nemesis hunts you
 const PERS=['forager','forager','hunter','hunter','coward'];
 // power-ups (King of the Hill, toggled in Settings): any cat can grab one by touching it
 const PU={catnip:{n:'Catnip',col:'#7ddc4a',t:6},shield:{n:'Shield',col:'#5fc4ff',t:5},magnet:{n:'Magnet',col:'#d77bff',t:8}};
 const PU_MAX=8,PU_EVERY=6;
+// your dash: up to DASH_MAX charges; one comes back every DASH_RECHARGE seconds (faster when big); DASH_GAP between dashes
+const DASH_MAX=3,DASH_RECHARGE=3.2,DASH_GAP=.45;
+// rewarding smart dashing over spamming: dashes within DASH_CHAIN s of the last are weaker (DASH_WEAK), and each dash pauses
+// recharging for DASH_HOLD s. Refunds: a pounce (absorb a cat mid-dash) returns the charge; a big catch or a close call returns half.
+const DASH_CHAIN=1,DASH_WEAK=[1,.7,.5],DASH_HOLD=1.2,BIG_CATCH=30;
 let powerups=[],puT=0,stats=null;
 const newStats=()=>({peak:START_R,cats:0,items:0,bldg:0,cars:0,trees:0,critters:0,combo:0,pu:0,survived:0});
 function kick(a){if(!RM)shakeA=Math.max(shakeA,a);}
