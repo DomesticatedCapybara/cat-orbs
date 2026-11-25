@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="theme-color" content="#1d2027">
-<title>Cat Orbs: King of the Hill v1.1</title>
+<title>Cat Orbs: King of the Hill v1.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
@@ -93,6 +93,10 @@ body.phone #sndBtn{top:calc(92px + var(--st))}
 #pauseBtn{position:absolute;left:50%;top:calc(12px + var(--st));transform:translateX(-50%);z-index:3;width:44px;height:44px;border-radius:50%;border:0;background:var(--panel);display:none;align-items:center;justify-content:center;gap:5px;cursor:pointer}
 #pauseBtn i{display:block;width:5px;height:16px;border-radius:2px;background:var(--cream)}
 body.playing #pauseBtn{display:flex}
+#count{position:absolute;left:0;right:0;top:16%;text-align:center;font-size:clamp(72px,18vw,140px);font-weight:800;color:var(--cream);text-shadow:0 6px 24px rgba(0,0,0,.6);pointer-events:none;opacity:0}
+#count.pop{animation:cdpop .9s ease-out forwards}
+@keyframes cdpop{0%{opacity:0;transform:scale(1.6)}15%{opacity:1;transform:scale(1)}70%{opacity:1}100%{opacity:0;transform:scale(.9)}}
+@media(prefers-reduced-motion:reduce){#count.pop{animation:none;opacity:1}}
 #combo{position:absolute;left:50%;bottom:calc(30px + var(--sb));transform:translateX(-50%) scale(.8);font-size:15px;font-weight:700;color:var(--cream);background:var(--panel);border-radius:999px;padding:4px 14px;pointer-events:none;opacity:0;transition:transform .12s;white-space:nowrap}
 #combo.on{transform:translateX(-50%) scale(1)}
 #combo b{font-size:22px;color:#ffd166;margin-right:4px}
@@ -133,6 +137,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
 <button id="dash">DASH</button>
 <div id="toast"></div>
 <div id="combo"></div>
+<div id="count"></div>
 <button id="sndBtn" type="button">Sound: on</button>
 <button id="pauseBtn" type="button" aria-label="Pause"><i></i><i></i></button>
 </div>
@@ -146,7 +151,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
         <h1>Cat Orbs: <em>King of the Hill</em></h1>
         <p><b>This preview can't run games.</b> iMessage and Files show HTML files in a quick preview that turns games off.</p>
         <p>To play on iPhone, open the game's <b>web link</b> in <b>Safari</b>. Ask whoever sent you this file for the link.</p>
-        <p style="font-size:13px;opacity:.6">Version 1.1</p>
+        <p style="font-size:13px;opacity:.6">Version 1.2</p>
       </div>
     </noscript>
     <h1>Cat Orbs: <em>King of the Hill</em></h1>
@@ -166,6 +171,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
         <li>Small cats turn and accelerate faster, so dodge rather than run. Big cats dash further and pull small items in</li>
         <li>Arrows at the screen edge point to nearby cats off-screen: <b style="color:#d9493a">red</b> can eat you, <b style="color:#2e9a6b">green</b> you can eat. In Grow Rush a <b style="color:#b8862b">gold</b> arrow points to a big tasty target</li>
         <li>Eat things in quick succession to build a <b>combo</b> of up to ×1.5 extra growth</li>
+        <li>Every match starts with a 3-second countdown. In King of the Hill, rivals leave you alone for the first 10 seconds (a blue ring shows you're protected)</li>
         <li>Tap the pause button at the top (or press <span class="key">P</span>). The game also pauses itself if you switch apps</li>
         <li>The last cat standing swells to fill the whole city</li>
         <li>Unlock new cat colours by playing, absorbing cats and winning</li>
@@ -192,7 +198,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
     </div>
     <p id="devNote"></p>
     <div class="btns sticky"><button class="big" id="playBtn">Play</button></div>
-    <p style="font-size:12px;opacity:.55;margin:4px 0 0">Version 1.1</p>
+    <p style="font-size:12px;opacity:.55;margin:4px 0 0">Version 1.2</p>
   </div>
 </div>
 
@@ -325,7 +331,8 @@ function placeFood(T){
     if(m>bs){bs=m;best={x,y};}}
   return{x:best.x,y:best.y,T,r:T.r,v:T.v,rot:Math.random()*7,ph:Math.random()*7,hue:Math.floor(Math.random()*3)};}
 const CAR_S=1.45; // cars are drawn and sized this much bigger than the original sprite
-const START_R=22,AI_COUNT=45;
+const START_R=22,AI_COUNT=45,SPAWN_EDGE=300;
+const COUNTDOWN=3,GRACE=10; // seconds of countdown before play; seconds rivals leave you alone after Go
 const dailySeed=()=>{const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();};
 // Solo: Grow Rush - no rival cats; race the clock to this size
 const SOLO_GOAL=1000,GOLD_T=90,SILVER_T=120,BRONZE_T=180;
@@ -649,21 +656,21 @@ function start(){
   // every cat (you included) starts the same size at evenly spread spots across the city
   const spots=[];
   const nAI=mode==='solo'?0:AI_COUNT;
-  for(let i=0;i<=nAI;i++){let best=null,bs=-1;
-    for(let k=0;k<40;k++){const x=rnd(-R0+150,R0-150),y=rnd(-R0+150,R0-150);
-      let m=Math.min(R0-Math.abs(x),R0-Math.abs(y))*2;for(const p of spots){const q=Math.hypot(p.x-x,p.y-y);if(q<m)m=q;}
-      if(m>bs){bs=m;best={x,y};}}
-    spots.push(best);}
-  spots.sort(()=>RNG()-.5);
+  // evenly spaced grid over the whole island (7x7 for 46 cats, ~830 apart), lightly jittered
+  const G=Math.ceil(Math.sqrt(nAI+1));
+  if(G<=1)spots.push({x:rnd(-R0*.5,R0*.5),y:rnd(-R0*.5,R0*.5)});
+  else{const lo=-R0+SPAWN_EDGE,step=(R0-SPAWN_EDGE)*2/(G-1);
+    for(let gx=0;gx<G;gx++)for(let gy=0;gy<G;gy++)spots.push({x:lo+gx*step+rnd(-step*.12,step*.12),y:lo+gy*step+rnd(-step*.12,step*.12)});
+    spots.sort(()=>RNG()-.5);spots.length=nAI+1;}
   const ps=spots.pop();RNG=Math.random;
   player=makeCat(ps.x,ps.y,START_R,nm,true,pf);cats.push(player);
   const names=NAMES.slice().sort(()=>Math.random()-.5);
   spots.forEach((p,i)=>cats.push(makeCat(p.x,p.y,START_R,names[i%names.length],false)));
-  cam={x:player.x,y:player.y,z:1};state='play';document.body.classList.add('playing');
+  cam={x:player.x,y:player.y,z:1};state='count';cdT=COUNTDOWN;cdShown=0;document.body.classList.add('playing');
   $('menu').hidden=true;$('end').hidden=true;['stats','board','mini'].forEach(i=>$(i).hidden=false);
   $('board').hidden=mode==='solo';$('pbar').hidden=mode!=='solo';$('leftLbl').textContent=mode==='solo'?'Goal':'Cats left';
   joy.id=null;if(!phone&&'ontouchstart' in window)$('dash').style.display='block';
-  toast(mode==='solo'?`Reach size ${SOLO_GOAL}, fast!`:'Gobble treats, absorb smaller cats!');
+  hud(cats);
 }
 function toast(t){const el=$('toast');el.textContent=t;el.style.opacity=1;toastT=2.2;}
 // Movement feel. Speed through the city grows with size so that, with the camera zooming out,
@@ -700,7 +707,7 @@ function think(c){
   for(const o of cats){if(o===c||!o.alive)continue;
     const dx=o.x-c.x,dy=o.y-c.y,d=Math.hypot(dx,dy)||1,edge=d-o.r-c.r;if(edge>vis)continue;
     if(canEat(o,c)){const w=1/(Math.max(edge,1)+40);fx-=dx/d*w;fy-=dy/d*w;threat+=w;closeThreat=Math.min(closeThreat,edge);}
-    else if(canEat(c,o)){const s=(o.r*o.r)/(Math.max(edge,1)+90)*(o.player?1.3:1);if(s>bs){bs=s;best=o;}}}
+    else if(canEat(c,o)){if(o.player&&time<GRACE)continue;const s=(o.r*o.r)/(Math.max(edge,1)+90)*(o.player?1.3:1);if(s>bs){bs=s;best=o;}}}
   // treats compete with prey: a big edible treat can be worth more than a far-off cat
   const fv=280+c.r*3;let bf=null,fs=0;
   for(const f of foods){const ex=f.x-c.x,ey=f.y-c.y;if(Math.abs(ex)>fv||Math.abs(ey)>fv||!canEatF(c,f))continue;
@@ -762,7 +769,7 @@ function update(dt){
     if(finalOn){const d=Math.hypot(c.x,c.y),lim=Math.max(0,arenaR-c.r);if(d>lim&&d>0){c.x=c.x/d*lim;c.y=c.y/d*lim;}}}
   const live=cats.filter(c=>c.alive).sort((a,b)=>b.r-a.r);
   for(let i=0;i<live.length;i++){const a=live[i];if(!a.alive)continue;
-    for(let j=i+1;j<live.length;j++){const b=live[j];if(!b.alive||!canEat(a,b))continue;
+    for(let j=i+1;j<live.length;j++){const b=live[j];if(!b.alive||!canEat(a,b)||(b.player&&time<GRACE))continue;
       if(Math.hypot(a.x-b.x,a.y-b.y)<a.r-b.r*.3)absorb(a,b);}}
   for(const c of live){if(!c.alive||(c.r<MAGNET_R&&!c.player))continue;
     const pm=c.player&&c.r<MAGNET_R*2, /* player assist: a small pull-in from the start */
@@ -836,7 +843,7 @@ function hud(alive){
   if(mode==='solo'){$('left').textContent=SOLO_GOAL;$('pbarFill').style.width=Math.min(100,player.r/SOLO_GOAL*100)+'%';
     const nx=MEDALS.find(([m,l])=>time<=l);$('hill').textContent=state==='finale'?'Max size!':`Time ${fmtT(time)}`+(nx?` · ${nx[0]} by ${fmtT(nx[1])}`:dayBest?` · today's best ${fmtT(dayBest)}`:'');return;}
   $('left').textContent=alive.length;
-  $('hill').textContent=state==='finale'?'Victory!':finalOn?'Final circle closing in!':`Match time ${fmt(time)} · final circle at ${FINAL_N} cats`;
+  $('hill').textContent=state==='count'?'Get ready…':time<GRACE&&player.alive?`Safe for ${Math.ceil(GRACE-time)}s · rivals can't eat you yet`:state==='finale'?'Victory!':finalOn?'Final circle closing in!':`Match time ${fmt(time)} · final circle at ${FINAL_N} cats`;
   const top=alive.slice().sort((a,b)=>b.r-a.r);let rows=top.slice(0,5);
   if(player.alive&&!rows.includes(player))rows=rows.slice(0,4).concat(player);
   $('lb').innerHTML=rows.map(c=>`<li class="${c.player?'me':''}" value="${top.indexOf(c)+1}"><span>${esc(c.name)}</span><span>${Math.round(c.r)}</span></li>`).join('');
@@ -857,6 +864,8 @@ function render(){
   const vis=cats.filter(c=>c.alive&&c.x+c.r*1.3>vl&&c.x-c.r*1.3<vl+vw&&c.y+c.r*1.3>vt&&c.y-c.r*1.3<vt+vh).sort((a,b)=>a.r-b.r);
   for(const c of vis){
     if(c.dash>0){ctx.fillStyle='rgba(255,244,224,.2)';ctx.beginPath();ctx.arc(c.x-c.vx*.06,c.y-c.vy*.06,c.r,0,7);ctx.fill();}
+    if(c.player&&mode==='koth'&&(state==='count'||time<GRACE)){const a=.45+.35*Math.sin(clock*6);ctx.strokeStyle=`rgba(127,208,255,${a})`;ctx.lineWidth=7/z;
+      ctx.setLineDash([10/z,8/z]);ctx.lineDashOffset=-clock*30/z;ctx.beginPath();ctx.arc(c.x,c.y,c.r+16/z,0,7);ctx.stroke();ctx.setLineDash([]);}
     if(c.player){ctx.strokeStyle='rgba(127,224,180,.9)';ctx.lineWidth=4/z;ctx.beginPath();ctx.arc(c.x,c.y,c.r+7/z,0,7);ctx.stroke();
       if(phone&&joy.id===null&&c.hx!==undefined&&!c.stopped){const a=Math.atan2(c.hy,c.hx),d=c.r+16/z,q=8/z;
         ctx.save();ctx.translate(c.x+c.hx*d,c.y+c.hy*d);ctx.rotate(a);ctx.fillStyle='rgba(127,224,180,.85)';
@@ -930,7 +939,12 @@ function menuScene(dt){
     c.look.x=c.dx;c.look.y=c.dy;c.blink-=dt;if(c.blink<-.12)c.blink=rnd(2,6);drawCat(ctx,c,c.x,c.y,c.r);}
 }
 let last=performance.now();
-let paused=false;
+let paused=false,cdT=0,cdShown=0;
+function countdown(dt){cdT-=dt;const n=Math.ceil(cdT);
+  if(n!==cdShown&&n>0){cdShown=n;showCount(String(n));tone(520,.14,'triangle',.18);}
+  if(cdT<=0){state='play';showCount('Go!');tone(880,.25,'triangle',.2);tone(1320,.3,'triangle',.12,0,.05);
+    toast(mode==='solo'?`Reach size ${SOLO_GOAL}, fast!`:`Rivals leave you alone for ${GRACE} seconds`);}}
+function showCount(t){const e=$('count');e.textContent=t;e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop');}
 function setPause(on){if(on&&state==='menu')return;paused=on;$('pauseOv').hidden=!on;joy.id=null;keys={};
   if(on)$('pauseInfo').textContent=mode==='solo'?`Time ${fmtT(time)} · size ${Math.round(player.r)} of ${SOLO_GOAL}`:`Size ${Math.round(player.alive?player.r:0)} · ${cats.filter(c=>c.alive).length} cats left`;}
 function toMenu(){paused=false;$('pauseOv').hidden=true;$('end').hidden=true;buildFurs();setMode(mode);$('menu').hidden=false;state='menu';document.body.classList.remove('playing');['stats','board','mini'].forEach(i=>$(i).hidden=true);}
@@ -942,7 +956,7 @@ function comboHud(){const t=combo>=3&&state==='play'&&player&&player.alive?`<b>�
 function loop(now){requestAnimationFrame(loop);const rdt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;clock+=rdt;
   shakeA*=Math.exp(-rdt*7);if(shakeA<.2)shakeA=0;
   const dt=slowT>0?rdt*.3:rdt;if(slowT>0)slowT-=rdt;
-  try{if(state==='menu')menuScene(rdt);else if(!paused){update(dt);render();comboHud();}}
+  try{if(state==='menu')menuScene(rdt);else if(!paused){if(state==='count'){countdown(rdt);render();}else{update(dt);render();comboHud();}}}
   catch(e){if(++errCount<4)showErr((e&&e.message)+'\n'+((e&&e.stack)||'').split('\n').slice(0,3).join('\n'));}}
 
 // ---------- colour picker ----------
