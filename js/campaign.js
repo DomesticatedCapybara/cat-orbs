@@ -53,7 +53,7 @@ let TH=THEMES.bay,TH_NAME='bay';
 // King of the Hill and Grow Rush use the continent maps too: a random one each match, or one per day for Grow Rush
 const MAPS=['bay','beach','desert','neon','snow','arena'];
 const mapName=th=>(LEVELS.find(L=>L.theme===th)||{name:'Whisker Bay'}).name;
-function mapFor(m){if(m==='camp')return LV.theme;if(SET.map!=='random'&&THEMES[SET.map])return SET.map;
+function mapFor(m){if(m==='camp')return LV.theme;if(m==='clean')return CL.theme;if(SET.map!=='random'&&THEMES[SET.map])return SET.map;
   return m==='solo'?MAPS[dailySeed()%MAPS.length]:MAPS[Math.floor(Math.random()*MAPS.length)];}
 function setTheme(n){TH_NAME=THEMES[n]?n:'bay';TH=THEMES[TH_NAME];if(typeof mkBatch==='function')mkBatch();}
 
@@ -171,10 +171,11 @@ const ARENA_STORY=()=>{const top=campStandings().slice(0,3).map(([n])=>n==='You'
 let storyPages=[],storyI=0,storyDone=null,storyRaf=0,storyT0=0;
 function showStory(pages,done){storyPages=pages;storyI=0;storyDone=done;$('story').hidden=false;storyT0=performance.now();storyPage();
   cancelAnimationFrame(storyRaf);const tick=n=>{if($('story').hidden)return;drawStory((n-storyT0)/1000);storyRaf=requestAnimationFrame(tick);};storyRaf=requestAnimationFrame(tick);}
-function storyPage(){const p=storyPages[storyI];$('storyText').textContent=p.text;$('storyNext').textContent=storyI<storyPages.length-1?'Next':'To the arena!';storyT0=performance.now();}
+function storyPage(){const p=storyPages[storyI];$('storyText').textContent=p.text;$('storyNext').textContent=p.btn||(storyI<storyPages.length-1?'Next':'To the arena!');storyT0=performance.now();}
 function storyEnd(){$('story').hidden=true;cancelAnimationFrame(storyRaf);const f=storyDone;storyDone=null;if(f)f();}
 function drawStory(t){const cv=$('storyCv'),d=Math.min(2,window.devicePixelRatio||1),Wd=cv.clientWidth||300,Hd=cv.clientHeight||200;
   if(cv.width!==Wd*d){cv.width=Wd*d;cv.height=Hd*d;}const g=cv.getContext('2d');g.setTransform(d,0,0,d,0,0);
+  if(storyPages[storyI].crew){drawCrewScene(g,Wd,Hd,t);return;}
   g.fillStyle='#070a14';g.fillRect(0,0,Wd,Hd);for(const[x,y,r,s]of STARS_BG){g.globalAlpha=.35+.5*Math.abs(Math.sin(t*1.3+s*9));circ(g,x*Wd,y*Hd,r*.8,'#fff');}g.globalAlpha=1;
   const sc=storyPages[storyI].scene,pr=Hd*.62,px=Wd/2,py=Hd+pr*.42;
   g.save();g.translate(px,py);g.scale(pr/PLANET_R,pr/PLANET_R);g.fillStyle='rgba(120,200,255,.25)';g.beginPath();g.arc(0,0,PLANET_R*1.06,0,7);g.fill();

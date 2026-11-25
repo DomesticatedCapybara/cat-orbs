@@ -53,12 +53,14 @@ const dayKey=()=>'catorb-day-'+dailySeed();
 const dayLabel=()=>new Date().toLocaleDateString(undefined,{month:'short',day:'numeric'});
 const medalFor=t=>{for(const[m,lim]of MEDALS)if(t<=lim)return m;return null;};
 function loadDayBest(){try{const v=parseFloat(localStorage.getItem(dayKey()));dayBest=v>0?v:null;}catch(e){dayBest=null;}}
-try{const m0=localStorage.getItem('catorb-mode');mode=m0==='solo'||m0==='camp'?m0:'koth';const b=parseFloat(localStorage.getItem('catorb-solobest'));if(b>0)soloBest=b;}catch(e){}
+try{const m0=localStorage.getItem('catorb-mode');mode=m0==='solo'||m0==='camp'||m0==='clean'?m0:'koth';const b=parseFloat(localStorage.getItem('catorb-solobest'));if(b>0)soloBest=b;}catch(e){}
 const fmtT=s=>`${Math.floor(s/60)}:${(s%60).toFixed(1).padStart(4,'0')}`;
 function setMode(m){mode=m;for(const r of document.querySelectorAll('input[name=mode]'))r.checked=r.value===m;
   try{localStorage.setItem('catorb-mode',m);}catch(e){}
   loadDayBest();
   const cp=$('campPanel');if(cp){cp.hidden=m!=='camp';if(m==='camp'){buildCamp();buildStandings();}}
+  const cl=$('cleanPanel');if(cl){cl.hidden=m!=='clean';if(m==='clean')buildClean();}
+  if(m==='clean'){$('playBtn').textContent=`Play ${CLEAN_LEVELS[cleanUnl(clean.sel)?clean.sel:0].name}`;$('modeNote').textContent=cleanNote();return;}
   $('playBtn').textContent=m==='camp'?`Play ${LEVELS[campUnl(camp.sel)?camp.sel:0].name}`:'Play';
   if(m==='camp'){$('modeNote').textContent=campNote();return;}
   $('modeNote').textContent=m==='solo'?`Today's city (${dayLabel()}) is ${mapName(mapFor('solo'))}: reach size ${SOLO_GOAL} as fast as you can. Gold ${fmtT(GOLD_T)}, silver ${fmtT(SILVER_T)}, bronze ${fmtT(BRONZE_T)}.`

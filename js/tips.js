@@ -14,7 +14,7 @@ function tipsTick(dt){
   if(combo>=3)tip('combo','Combo! Keep eating quickly for bonus growth.');
   if(time>22&&!dashed)tip('dash',phone?'Tap Dash for a burst of speed. It works while cruising too.':'Press Space to dash for a burst of speed.');
   if(powerups.some(u=>u.alive&&Math.abs(u.x-player.x)<W/2/cam.z&&Math.abs(u.y-player.y)<H/2/cam.z))tip('pu','Power-up! Catnip = speed, shield = can\'t be eaten, magnet = pulls food in.');
-  if(time>12&&mode!=='solo')tip('arrows','Arrows at the edge point to cats off-screen. "!" means danger.');
+  if(time>12&&mode!=='solo'&&mode!=='clean')tip('arrows','Arrows at the edge point to cats off-screen. "!" means danger.');
   if(tipQ.length){const[id,text]=tipQ.shift();TIPS_DONE[id]=1;try{localStorage.setItem('catorb-tips',JSON.stringify(TIPS_DONE));}catch(e){}
     $('tip').textContent=text;$('tip').classList.add('on');tipT=5;tipCool=2.5;}}
 function resetTips(){TIPS_DONE={};try{localStorage.removeItem('catorb-tips');}catch(e){}}

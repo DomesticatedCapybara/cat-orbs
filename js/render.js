@@ -7,7 +7,7 @@ function render(){
   drawBackground(z,vl,vt,vw,vh);
   if(finalOn&&state!=='finale'){
     ctx.fillStyle='rgba(8,10,14,.68)';ctx.beginPath();ctx.rect(vl,vt,vw,vh);ctx.arc(0,0,arenaR,0,Math.PI*2);ctx.fill('evenodd');
-    ctx.strokeStyle=PAL.danger;ctx.lineWidth=6/z*PAL.w;ctx.setLineDash([24/z,16/z]);ctx.beginPath();ctx.arc(0,0,arenaR,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}
+    ctx.strokeStyle=mode==='clean'?'#ffd23f':PAL.danger;ctx.lineWidth=6/z*PAL.w;ctx.setLineDash([24/z,16/z]);ctx.beginPath();ctx.arc(0,0,arenaR,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}
   const pad=120;
   if(state!=='finale'||finT<FIN_CITY)drawWorldWeather(z,vl,vt,vw,vh);
   drawPropOutlines(z);
@@ -16,7 +16,7 @@ function render(){
   const vis=cats.filter(c=>c.alive&&c.x+c.r*1.3>vl&&c.x-c.r*1.3<vl+vw&&c.y+c.r*1.3>vt&&c.y-c.r*1.3<vt+vh).sort((a,b)=>a.r-b.r);
   for(const c of vis){
     if(c.dash>0){ctx.fillStyle='rgba(255,244,224,.2)';ctx.beginPath();ctx.arc(c.x-c.vx*.06,c.y-c.vy*.06,c.r,0,7);ctx.fill();}
-    if(c.player&&mode!=='solo'&&state!=='finale'&&(state==='count'||time<GRACE)){const a=.45+.35*Math.sin(clock*6);ctx.strokeStyle=`rgba(127,208,255,${a})`;ctx.lineWidth=7/z;
+    if(c.player&&mode!=='solo'&&mode!=='clean'&&state!=='finale'&&(state==='count'||time<GRACE)){const a=.45+.35*Math.sin(clock*6);ctx.strokeStyle=`rgba(127,208,255,${a})`;ctx.lineWidth=7/z;
       ctx.setLineDash([10/z,8/z]);ctx.lineDashOffset=-clock*30/z;ctx.beginPath();ctx.arc(c.x,c.y,c.r+16/z,0,7);ctx.stroke();ctx.setLineDash([]);}
     // shape cues for everyone: spiky ring = can eat you, dotted ring = you can eat it
     if(!c.player&&player&&player.alive&&state!=='finale'){
@@ -68,6 +68,7 @@ function drawArrows(){
     const o=offscreen(c.x,c.y,c.r);if(!o)continue;const d=Math.hypot(c.x-player.x,c.y-player.y);if(d>range)continue;
     (t?th:pr).push({sx:o[0],sy:o[1],d,col:t?PAL.danger:PAL.edible,lbl:String(Math.round(c.r)),pulse:t,kind:t?'danger':'prey'});}
   th.sort((a,b)=>a.d-b.d);pr.sort((a,b)=>a.d-b.d);out.push(...th.slice(0,3),...pr.slice(0,2));
+  if(mode==='clean'&&player.alive){const o0=junkTarget(),o=o0&&offscreen(o0.x,o0.y,o0.r);if(o)out.push({sx:o[0],sy:o[1],d:Math.hypot(o0.x-player.x,o0.y-player.y),col:PAL.gold,lbl:'',pulse:false,kind:'target'});}
   if(mode==='solo'){let best=null,bs=0;const cand=o=>{if(!canEatF(player,o)||o.r<player.r*.3)return;const d=Math.hypot(o.x-player.x,o.y-player.y);if(d>range*1.5)return;
       const sc=o.v*o.v/(d+200);if(sc>bs&&offscreen(o.x,o.y,o.r)){bs=sc;best=o;}};
     for(const f of foods)if(f.T.big)cand(f);for(const p of props)if(p.alive)cand(p);
@@ -102,8 +103,8 @@ function drawMini(){
   if(state==='finale'){mctx.setTransform(1,0,0,1,0,0);mctx.clearRect(0,0,s,s);mctx.fillStyle='rgba(31,78,107,.6)';mctx.fillRect(0,0,s,s);mctx.fillStyle=king?king.fur.b:'#f4a259';mctx.globalAlpha=.85;mctx.fillRect(0,0,s,s);mctx.globalAlpha=1;return;}
   mctx.setTransform(1,0,0,1,0,0);mctx.clearRect(0,0,s,s);
   mctx.fillStyle='rgba(31,78,107,.6)';mctx.fillRect(0,0,s,s);mctx.fillStyle='rgba(60,62,70,.9)';mctx.fillRect(h-R0*k,h-R0*k,R0*2*k,R0*2*k);
-  if(finalOn&&state!=='finale'){mctx.strokeStyle=PAL.danger;mctx.lineWidth=1.5*DPR;mctx.beginPath();mctx.arc(h,h,arenaR*k,0,7);mctx.stroke();}
-  for(const f of foods)if(f.T.big){mctx.fillStyle=f.T.glow;mctx.globalAlpha=.8;mctx.beginPath();mctx.arc(h+f.x*k,h+f.y*k,Math.max(1.2*DPR,f.r*k),0,7);mctx.fill();mctx.globalAlpha=1;}
+  if(finalOn&&state!=='finale'){mctx.strokeStyle=mode==='clean'?'#ffd23f':PAL.danger;mctx.lineWidth=1.5*DPR;mctx.beginPath();mctx.arc(h,h,arenaR*k,0,7);mctx.stroke();}
+  for(const f of foods)if(f.T.big||mode==='clean'){mctx.fillStyle=f.T.glow;mctx.globalAlpha=.8;mctx.beginPath();mctx.arc(h+f.x*k,h+f.y*k,Math.max(1.2*DPR,f.r*k),0,7);mctx.fill();mctx.globalAlpha=1;}
   for(const c of cats){if(!c.alive)continue;
     mctx.fillStyle=c.player?'#ffffff':player.alive?(canEat(player,c)?PAL.edible:canEat(c,player)?PAL.danger:'#e9dcc6'):'#e9dcc6';
     mctx.beginPath();mctx.arc(h+c.x*k,h+c.y*k,Math.max(c.player?3*DPR:1.6*DPR,c.r*k),0,7);mctx.fill();}
@@ -125,10 +126,10 @@ let paused=false,cdT=0,cdShown=0;
 function countdown(dt){cdT-=dt;const n=Math.ceil(cdT);
   if(n!==cdShown&&n>0){cdShown=n;showCount(String(n));tone(520,.14,'triangle',.18);}
   if(cdT<=0){state='play';showCount('Go!');tone(880,.25,'triangle',.2);tone(1320,.3,'triangle',.12,0,.05);
-    toast(mode==='solo'?`Reach size ${SOLO_GOAL}, fast!`:mode==='camp'?`${LV.name}: ${goalText(LV)}!`:`Rivals leave you alone for ${GRACE} seconds`+(nemName?`. Watch out for ${nemName}, your nemesis!`:''));}}
+    toast(mode==='clean'?`Clean up ${CL.name}: swallow every piece of junk!`:mode==='solo'?`Reach size ${SOLO_GOAL}, fast!`:mode==='camp'?`${LV.name}: ${goalText(LV)}!`:`Rivals leave you alone for ${GRACE} seconds`+(nemName?`. Watch out for ${nemName}, your nemesis!`:''));}}
 function showCount(t){const e=$('count');e.textContent=t;e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop');}
 function setPause(on){if(on&&state==='menu')return;paused=on;$('pauseOv').hidden=!on;joy.id=null;keys={};
-  if(on)$('pauseInfo').textContent=mode==='solo'?`Time ${fmtT(time)} · size ${Math.round(player.r)} of ${SOLO_GOAL}`:`Size ${Math.round(player.alive?player.r:0)} · ${cats.filter(c=>c.alive).length} cats left`;}
+  if(on)$('pauseInfo').textContent=mode==='clean'?`Time ${fmtT(time)} · ${foods.length} pieces of junk left`:mode==='solo'?`Time ${fmtT(time)} · size ${Math.round(player.r)} of ${SOLO_GOAL}`:`Size ${Math.round(player.alive?player.r:0)} · ${cats.filter(c=>c.alive).length} cats left`;}
 function toMenu(){hideSay();ambient('none');paused=false;$('pauseOv').hidden=true;$('end').hidden=true;buildFurs();setMode(mode);$('menu').hidden=false;state='menu';document.body.classList.remove('playing');['stats','board','mini'].forEach(i=>$(i).hidden=true);}
 let errCount=0;
 let comboShown='';

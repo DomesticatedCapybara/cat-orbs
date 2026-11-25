@@ -77,7 +77,7 @@ $('watchBtn').addEventListener('click',()=>{$('end').hidden=true;toast('Spectati
 $('menuBtn').addEventListener('click',toMenu);
 $('storyNext').addEventListener('click',()=>{if(storyI<storyPages.length-1){storyI++;storyPage();}else storyEnd();});
 $('storySkip').addEventListener('click',storyEnd);
-$('nextBtn').addEventListener('click',()=>{const i=LEVELS.indexOf(LV);if(i+1<LEVELS.length&&campUnl(i+1)){camp.sel=i+1;saveCamp();setMode('camp');}safeStart();});
+$('nextBtn').addEventListener('click',()=>{if(mode==='clean'){const j=CLEAN_LEVELS.indexOf(CL);if(CLEAN_LEVELS[j+1]&&cleanUnl(j+1)){clean.sel=j+1;saveClean();setMode('clean');}safeStart();return;}const i=LEVELS.indexOf(LV);if(i+1<LEVELS.length&&campUnl(i+1)){camp.sel=i+1;saveCamp();setMode('camp');}safeStart();});
 addEventListener('resize',()=>{if(mode==='camp'&&!$('menu').hidden)drawCampMap();});
 $('campMap').addEventListener('click',e=>{const cv=$('campMap'),R=cv.getBoundingClientRect(),S=R.width,k=S/(PLANET_R*2.3);let best=-1,bd=30;
   LEVELS.forEach((L,i)=>{const d=Math.hypot(e.clientX-R.left-(S/2+L.pin[0]*k),e.clientY-R.top-(S/2+L.pin[1]*k));if(d<bd){bd=d;best=i;}});

@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="theme-color" content="#1d2027">
-<title>Cat Orbs: Conquerors of Cat Earth v2.1.6</title>
+<title>Cat Orbs: Conquerors of Cat Earth v2.2.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/game.css">
@@ -56,7 +56,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
         <h1>Cat Orbs: <em>Conquerors of Cat Earth</em></h1>
         <p><b>This preview can't run games.</b> iMessage and Files show HTML files in a quick preview that turns games off.</p>
         <p>To play on iPhone, open the game's <b>web link</b> in <b>Safari</b>. Ask whoever sent you this file for the link.</p>
-        <p style="font-size:13px;opacity:.6">Version 2.1.6</p>
+        <p style="font-size:13px;opacity:.6">Version 2.2.0</p>
       </div>
     </noscript>
     <h1>Cat Orbs: <em>Conquerors of Cat Earth</em></h1>
@@ -86,6 +86,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
         <li>Tap the pause button at the top (or press <span class="key">P</span>). The game also pauses itself if you switch apps</li>
         <li>The last cat standing swells to fill the whole city… and then the whole of Cat Earth</li>
         <li><b>Campaign:</b> conquer Cat Earth one continent at a time. Each continent has its own city and goal, and you earn up to 3 stars for speed. The same 9 <b>regular</b> rivals compete with you on every continent for points in the rival standings, led by your nemesis <b>Duchess</b>, who hunts you everywhere. Beat all five and an alien invader abducts the best cat orbs for the final <b>Alien Arena</b>, a shrinking ring where you orb for the fate of Earth</li>
+        <li><b>Clean-up Crew:</b> a separate campaign of cleaning jobs. Each job is a fenced-off area full of themed junk. Swallow every last piece; the faster you finish, the more stars you earn. A gold arrow points to the nearest piece</li>
         <li>Unlock new cat colors by playing, absorbing cats and winning</li>
       </ul>
     </details>
@@ -96,12 +97,14 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
       <label><input type="radio" name="mode" value="koth" checked><span>King of the Hill</span></label>
       <label><input type="radio" name="mode" value="solo"><span>Solo: Grow Rush</span></label>
       <label><input type="radio" name="mode" value="camp"><span>Campaign</span></label>
+      <label><input type="radio" name="mode" value="clean"><span>Clean-up Crew</span></label>
     </div>
     <div id="campPanel" hidden>
       <canvas id="campMap" width="260" height="260" aria-label="Map of Cat Earth showing the campaign levels on each continent"></canvas>
       <div id="campList" role="group" aria-label="Campaign levels"></div>
       <div id="campStand"></div>
     </div>
+    <div id="cleanPanel" hidden><div id="cleanList" role="group" aria-label="Clean-up jobs"></div></div>
     <p id="modeNote" style="font-size:13px;opacity:.75;margin:4px 0 0"></p>
     <div class="lbl">Cat color <span id="unlCount" style="font-weight:500;opacity:.7"></span></div>
     <div id="furs"></div>
@@ -116,7 +119,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
     </div>
     <p id="devNote"></p>
     <div class="btns sticky"><button class="big" id="playBtn">Play</button></div>
-    <p style="font-size:12px;opacity:.55;margin:4px 0 0">Version 2.1.6</p>
+    <p style="font-size:12px;opacity:.55;margin:4px 0 0">Version 2.2.0</p>
   </div>
 </div>
 
@@ -239,6 +242,7 @@ setTimeout(function(){if(!window.__catOk)window.__catErr('The game script did no
 <script src="js/core.js"></script>
 <script src="js/world.js"></script>
 <script src="js/campaign.js"></script>
+<script src="js/cleanup.js"></script>
 <script src="js/city.js"></script>
 <script src="js/cats.js"></script>
 <script src="js/audio.js"></script>

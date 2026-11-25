@@ -8,13 +8,13 @@ const LAMP_GLOW=glowSprite('rgba(255,214,140,.6)'),HEAD_GLOW=glowSprite('rgba(25
 function fogLayer(){const k=W+'x'+H;if(WX.fogKey===k)return WX.fog;const c=document.createElement('canvas'),s=.25;c.width=Math.ceil(W*s);c.height=Math.ceil(H*s);
   const g=c.getContext('2d'),gr=g.createRadialGradient(c.width/2,c.height/2,Math.min(c.width,c.height)*.22,c.width/2,c.height/2,Math.max(c.width,c.height)*.62);
   gr.addColorStop(0,'rgba(205,212,222,0)');gr.addColorStop(1,'rgba(205,212,222,.82)');g.fillStyle=gr;g.fillRect(0,0,c.width,c.height);WX.fog=c;WX.fogKey=k;return c;}
-function pickWeather(){const w=mode==='camp'?LV.wx:SET.weather;
+function pickWeather(){const w=mode==='camp'?LV.wx:mode==='clean'?CL.wx:SET.weather;
   if(w!=='random')return w;const r=Math.random();return r<.45?'clear':r<.7?'rain':r<.85?'snow':'fog';}
 function setupWeather(){WX.type=pickWeather();WX.flash=0;WX.nextBolt=8+Math.random()*12;
   WX.drops=Array.from({length:(WX.type==='rain'?150:WX.type==='snow'?130:0)*(SET.lite?.4:1)},()=>({x:Math.random(),y:Math.random(),s:.6+Math.random()*.8,p:Math.random()*7}));
   ambient(WX.type);}
 // darkness 0 (noon) .. ~.62 (night); dusk adds a warm tint around the change
-function darkness(){const m=mode==='camp'&&state!=='menu'?LV.tod:SET.tod;if(state==='menu')return 0;if(m==='day')return 0;if(m==='dusk')return .28;if(m==='night')return .62;
+function darkness(){const m=mode==='camp'&&state!=='menu'?LV.tod:mode==='clean'?CL.tod:SET.tod;if(state==='menu')return 0;if(m==='day')return 0;if(m==='dusk')return .28;if(m==='night')return .62;
   const t=time;return t<50?0:t<110?(t-50)/60*.3:Math.min(.62,.3+(t-110)/60*.32);}
 function duskTint(d){return d>.05&&d<.5?Math.sin(d/.5*Math.PI)*.16:0;}
 // world-space layer, drawn over the ground and props but under treats and cats

@@ -2,25 +2,27 @@
 // ---------- game flow ----------
 function start(){
   if(mode==='camp'&&LEVELS[camp.sel]&&LEVELS[camp.sel].alien&&campUnl(camp.sel)&&!camp.sawIntro){camp.sawIntro=1;saveCamp();showStory(ARENA_STORY(),start);return;}
+  if(mode==='clean'&&!clean.sawIntro){clean.sawIntro=1;saveClean();showStory(CREW_STORY,start);return;}
   if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
-  if(mode==='camp')LV=LEVELS[campUnl(camp.sel)?camp.sel:0];setTheme(mapFor(mode));
+  if(mode==='camp')LV=LEVELS[campUnl(camp.sel)?camp.sel:0];if(mode==='clean')CL=CLEAN_LEVELS[cleanUnl(clean.sel)?clean.sel:0];setTheme(mapFor(mode));
   setupWeather();
-  ufo=null;aliveN=(mode==='solo'?0:mode==='camp'?LV.rivals:AI_COUNT)+1;cats=[];eaten=[];foodEaten=[];parts=[];floats=[];time=0;arenaR=R0*1.42;finalOn=false;king=null;setCity(mode==='solo'?dailySeed():mode==='camp'?LV.seed:(Math.random()*4294967295)>>>0);buildProps();finT=0;endShown=false;recorded=false;myCats=0;myTreats=0;MILESTONES.forEach(m=>m.done=false);
+  ufo=null;aliveN=(mode==='solo'||mode==='clean'?0:mode==='camp'?LV.rivals:AI_COUNT)+1;cats=[];eaten=[];foodEaten=[];parts=[];floats=[];time=0;arenaR=R0*1.42;finalOn=false;king=null;setCity(mode==='solo'?dailySeed():mode==='camp'?LV.seed:mode==='clean'?CL.seed:(Math.random()*4294967295)>>>0);buildProps();finT=0;endShown=false;recorded=false;myCats=0;myTreats=0;MILESTONES.forEach(m=>m.done=false);
   wasUnl=FUR.map(isUnl);
   RNG=mode==='solo'?seeded(dailySeed()):Math.random; // same start for everyone on the same day
-  foods=[];for(const T of FOODT.slice().reverse())for(let i=0;i<T.n;i++)foods.push(placeFood(T));
+  if(mode==='clean'){finalOn=true;arenaR=CL.zone;placeJunk();} // the job site: a fenced circle full of junk, no fresh treats
+  else{foods=[];for(const T of FOODT.slice().reverse())for(let i=0;i<T.n;i++)foods.push(placeFood(T));}
   const nm=($('nameIn').value.trim()||'You').slice(0,14);
   const pf=isUnl(FUR[prog.pick]||FUR[0])?FUR[prog.pick]:FUR[0];
   // every cat (you included) starts the same size at evenly spread spots across the city
   const spots=[];
-  const nAI=mode==='solo'?0:mode==='camp'?LV.rivals:AI_COUNT;
+  const nAI=mode==='solo'||mode==='clean'?0:mode==='camp'?LV.rivals:AI_COUNT;
   // evenly spaced grid over the whole island (7x7 for 46 cats, ~830 apart), lightly jittered
   const G=Math.ceil(Math.sqrt(nAI+1));
   if(G<=1)spots.push({x:rnd(-R0*.5,R0*.5),y:rnd(-R0*.5,R0*.5)});
   else{const lo=-R0+SPAWN_EDGE,step=(R0-SPAWN_EDGE)*2/(G-1);
     for(let gx=0;gx<G;gx++)for(let gy=0;gy<G;gy++)spots.push({x:lo+gx*step+rnd(-step*.12,step*.12),y:lo+gy*step+rnd(-step*.12,step*.12)});
     spots.sort(()=>RNG()-.5);spots.length=nAI+1;}
-  const ps=spots.pop();RNG=Math.random;
+  const ps=spots.pop();RNG=Math.random;if(mode==='clean'){ps.x=0;ps.y=0;}
   player=makeCat(ps.x,ps.y,START_R,nm,true,pf);player.charges=DASH_MAX;player.chargeT=0;cats.push(player);
   const names=NAMES.slice().sort(()=>Math.random()-.5);
   spots.forEach((p,i)=>{const c=makeCat(p.x,p.y,START_R,names[i%names.length],false);c.pers=PERS[i%PERS.length];c.buff={};cats.push(c);});
@@ -30,7 +32,7 @@ function start(){
   if(mode==='camp')nemName=NEMESIS;else if(mode!=='solo'&&cats.length>2){const pool=cats.filter(c=>!c.player&&!c.champ),nem=pool[Math.floor(Math.random()*pool.length)];nem.pers='nemesis';nemName=nem.name;}else nemName='';
   cam={x:player.x,y:player.y,z:1};state='count';cdT=COUNTDOWN;cdShown=0;document.body.classList.add('playing');
   $('menu').hidden=true;$('end').hidden=true;['stats','board','mini'].forEach(i=>$(i).hidden=false);
-  $('board').hidden=mode==='solo';$('pbar').hidden=!(mode==='solo'||mode==='camp'&&LV.goal.type==='size');$('leftLbl').textContent=mode==='solo'||mode==='camp'&&LV.goal.type!=='win'?'Goal':'Cats left';
+  $('board').hidden=mode==='solo'||mode==='clean';$('pbar').hidden=!(mode==='solo'||mode==='clean'||mode==='camp'&&LV.goal.type==='size');$('leftLbl').textContent=mode==='clean'?'Junk left':mode==='solo'||mode==='camp'&&LV.goal.type!=='win'?'Goal':'Cats left';
   joy.id=null;if(!phone&&'ontouchstart' in window)$('dash').style.display='block';
   hud(cats);
   if(mode==='camp')setTimeout(()=>{if(state==='count'||state==='play')say(NEMESIS,TAUNTS[LEVELS.indexOf(LV)],FUR[REGULARS[0].fur],6.5);},350);else hideSay();
@@ -76,6 +78,7 @@ function alienFinale(dt){const k=king;
 // once the winner is full, eating (and its sounds) stops: after swallowing Cat Earth, or in the campaign
 // once the city is filled (in the Alien Arena, once the invader's ship has been eaten)
 function doneEating(){if(state!=='finale'||!king)return false;if(king.earthDone)return true;
+  if(mode==='clean')return finT>.3; // job done: stop eating, then one satisfied burp
   if(mode==='camp')return LV.alien&&king.player?!!(ufo&&ufo.eaten&&finT>FIN_CITY+2.6):finT>FIN_CITY;return false;}
 // The winner is full: it closes its mouth, shuts its eyes contentedly, then lets out one quick burp before the results
 function burpTick(dt){const k=king;if(!k||!k.player||!doneEating())return;
@@ -104,8 +107,8 @@ function record(place,won){
   $('unl').textContent=nu.length?`New color${nu.length>1?'s':''} unlocked: ${nu.join(', ')}!`:'';
 }
 function statsHtml(){if(!stats||mode==='solo')return'';const s=stats.frozen||stats,t=s.survived||time;
-  const rows=[['Peak size',Math.round(s.peak)],['Cats absorbed',s.cats],['Things eaten',s.items],['Buildings',s.bldg],['Cars & vans',s.cars],['Trees & bushes',s.trees],['Pigeons & mice',s.critters],['Best combo',s.combo],['Power-ups',s.pu],[mode==='camp'?'Time':'Time survived',fmt(t)]];
-  return rows.map(([k,v])=>`<div><span>${k}</span><b>${v}</b></div>`).join('');}
+  const rows=[['Peak size',Math.round(s.peak)],['Cats absorbed',s.cats],['Things eaten',s.items],['Buildings',s.bldg],['Cars & vans',s.cars],['Trees & bushes',s.trees],['Pigeons & mice',s.critters],['Best combo',s.combo],['Power-ups',s.pu],[mode==='camp'||mode==='clean'?'Time':'Time survived',fmt(t)]];
+  return rows.filter(([k])=>mode!=='clean'||k!=='Cats absorbed'&&k!=='Power-ups').map(([k,v])=>`<div><span>${k}</span><b>${v}</b></div>`).join('');}
 function showEnd(title,text,watch){hideSay();$('nextBtn').hidden=true;$('againBtn').textContent=mode==='camp'?'Try again':'Play again';$('endStats').innerHTML=statsHtml();$('endTitle').textContent=title;$('endText').textContent=text;$('watchBtn').hidden=!watch;$('medal').hidden=true;$('copyBtn').hidden=true;$('copyBtn').textContent='Copy result';$('end').hidden=false;}
 function resultText(){const md=king&&king.medal;const url=/^https?:/.test(location.protocol)&&!/claude\.ai/.test(location.host)?'\n'+location.href:'';
   return`Cat Orbs · Grow Rush · ${dayLabel()} city\nReached size ${SOLO_GOAL} in ${fmtT(king.soloT)}${md?` (${md} medal)`:''}\nCan you beat it?${url}`;}
@@ -219,7 +222,7 @@ function update(dt){
         if(c.player){myTreats++;stats.items++;if(p.k==='bldg')stats.bldg++;else if(p.k==='car'||p.k==='veh')stats.cars++;else if(p.k==='tree'||p.k==='bush')stats.trees++;
           if(p.r>=14){snd.crunch(p.r);snd.slurp(p.r);}else{snd.pick(p.r);if(p.r>=9)snd.slurp(p.r);}floats.push({x:p.x,y:p.y-p.r,t:p.r>=14?1:.6,txt:p.r>=14?'+'+Math.round(p.v/2):'+'});}}});}
   // power-ups: keep a few around the island; touching one grants it
-  if(mode!=='solo'&&SET.pu&&state==='play'){puT-=dt;if(puT<=0&&powerups.filter(u=>u.alive).length<PU_MAX){puT=PU_EVERY;const ks=Object.keys(PU),p=randPoint(200);powerups.push({k:ks[Math.floor(Math.random()*ks.length)],x:p.x,y:p.y,r:14,v:0,alive:true,ph:Math.random()*7});}
+  if(mode!=='solo'&&mode!=='clean'&&SET.pu&&state==='play'){puT-=dt;if(puT<=0&&powerups.filter(u=>u.alive).length<PU_MAX){puT=PU_EVERY;const ks=Object.keys(PU),p=randPoint(200);powerups.push({k:ks[Math.floor(Math.random()*ks.length)],x:p.x,y:p.y,r:14,v:0,alive:true,ph:Math.random()*7});}
     for(const u of powerups){if(!u.alive)continue;for(const c of live){if(!c.alive)continue;if(Math.hypot(u.x-c.x,u.y-c.y)<c.r+u.r){u.alive=false;c.buff[u.k]=PU[u.k].t;
       if(c.player){stats.pu++;snd.level();toast(`${PU[u.k].n}! ${u.k==='catnip'?'Zoom zoom':u.k==='shield'?"Nothing can eat you":'Everything small flies to you'} for ${PU[u.k].t}s`);}break;}}}
     powerups=powerups.filter(u=>u.alive);}
@@ -245,7 +248,7 @@ function update(dt){
   if(player.alive)for(const m of MILESTONES)if(!m.done&&player.r>m.need){m.done=true;toast(`You can eat ${m.name} now!`);snd.level();}
   const cnt=new Map();for(const f of foods)cnt.set(f.T,(cnt.get(f.T)||0)+1);
   const af=finalOn?Math.min(1,Math.PI*arenaR*arenaR/(4*R0*R0)):1;
-  if(!fed)for(const T of FOODT){const want=Math.round(T.n*af);let have=cnt.get(T)||0;
+  if(!fed&&mode!=='clean')for(const T of FOODT){const want=Math.round(T.n*af);let have=cnt.get(T)||0;
     let k=Math.floor(T.rate*dt+Math.random());while(k-->0&&have<want){foods.push(placeFood(T));have++;}}
   eaten=flyTick(eaten,dt,.45);
   for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.92;p.vy*=.92;p.life-=dt;}parts=parts.filter(p=>p.life>0);
@@ -254,10 +257,11 @@ function update(dt){
   // final circle: once only a few cats are left, the edge slowly closes to bring them together
   if(mode!=='solo'&&!finalOn&&state!=='finale'&&alive.length<=FINAL_N&&alive.length>1){finalOn=true;toast(`Final ${alive.length}! The circle is closing in`);snd.warn();}
   if(mode==='camp'&&LV.arena&&!finalOn&&state==='play'&&time>=GRACE){finalOn=true;toast('The arena is closing in!');snd.warn();}
-  if(finalOn&&state!=='finale'){const target=FINAL_MIN,sp=mode==='camp'&&LV.arena&&alive.length>FINAL_N?ARENA_SPEED:FINAL_SPEED;
+  if(finalOn&&state!=='finale'&&mode!=='clean'){const target=FINAL_MIN,sp=mode==='camp'&&LV.arena&&alive.length>FINAL_N?ARENA_SPEED:FINAL_SPEED;
     if(arenaR>target)arenaR=Math.max(target,arenaR-sp*dt);}
   // campaign goals: reaching a size or absorbing enough cats conquers the continent
   if(mode==='camp'&&!king&&state==='play'&&player.alive&&(LV.goal.type==='size'&&player.r>=LV.goal.n||LV.goal.type==='cats'&&myCats>=LV.goal.n))campWin();
+  if(mode==='clean'&&!king&&state==='play'&&player.alive&&!foods.length)cleanWin();
   // last cat standing: start the finale, where the king swells to fill the city
   if(mode==='solo'&&!king&&player.r>=SOLO_GOAL){king=player;finT=0;state='finale';snd.win();
     const t=time,isBest=!soloBest||t<soloBest,isDay=!dayBest||t<dayBest;
@@ -268,20 +272,21 @@ function update(dt){
       +(md?'':` Bronze is ${fmtT(BRONZE_T)}.`);
     if(!recorded){recorded=true;prog.games++;prog.treats+=myTreats;saveProg();const nu=FUR.filter((f,i)=>!wasUnl[i]&&isUnl(f)).map(f=>f.n);$('unl').textContent=nu.length?`New color${nu.length>1?'s':''} unlocked: ${nu.join(', ')}!`:'';}
     toast(md?`${md[0].toUpperCase()+md.slice(1)} medal!`:isBest?'New best time!':'Max size!');}
-  if(mode!=='solo'&&alive.length===1&&!king){king=alive[0];finT=0;
+  if(mode!=='solo'&&mode!=='clean'&&alive.length===1&&!king){king=alive[0];finT=0;
     if(king.player){stats.survived=time;record(1,true);if(mode==='camp'){camp.res[LEVELS.indexOf(LV)]=campPlaces();king.camp=campComplete(time);}}
     if(!stats.frozen)stats.frozen=Object.assign({},stats); // the match is decided: the finale doesn't count
     state='finale';if(king.player)snd.win();toast(king.player?'You are King of the Hill!':`${king.name} is King of the Hill`);}
   if(state==='finale'){finT+=dt;burpTick(dt);
     arenaR+=(R0*1.42-arenaR)*Math.min(1,dt*1.2);
-    const alienEnd=mode==='camp'&&LV.alien&&king.player,noEarth=mode==='camp'&&!LV.earth;
+    const alienEnd=mode==='camp'&&LV.alien&&king.player,noEarth=mode==='clean'||mode==='camp'&&!LV.earth;
     if(alienEnd)alienFinale(dt);
-    if(finT<FIN_CITY||noEarth)king.t+=(R0*1.45-king.t)*Math.min(1,dt*.75);
+    if(mode==='clean'){}else if(finT<FIN_CITY||noEarth)king.t+=(R0*1.45-king.t)*Math.min(1,dt*.75);
     else{const k=Math.min(1,(finT-FIN_CITY)/FIN_EARTH),e=k*k*(3-2*k),r0=R0*1.45,r1=PLANET_R*1.06;king.t=r0*Math.pow(r1/r0,e);
       if(!king.earthSaid&&finT>FIN_CITY+.6){king.earthSaid=1;toast('The city was just the start… Cat Earth!');}
       if(!king.earthDone&&k>=1){king.earthDone=1;toast(king.player?'You swallowed the whole planet!':`${king.name} swallowed Cat Earth!`);kick(14);}}
-    if(finT>(alienEnd?FIN_CITY+8:noEarth?FIN_CITY+.8:FIN_CITY+FIN_EARTH+2)&&!endShown&&burpDone()){endShown=true;
+    if(finT>(alienEnd?FIN_CITY+8:mode==='clean'?1.6:noEarth?FIN_CITY+.8:FIN_CITY+FIN_EARTH+2)&&!endShown&&burpDone()){endShown=true;
       if(mode==='camp')showCampEnd();
+      else if(mode==='clean')showCleanEnd();
       else if(mode==='solo'){showEnd(king.medal?`${king.medal[0].toUpperCase()+king.medal.slice(1)} medal!`:'Max size!',king.soloText,false);
         const m=$('medal');m.className='medal '+(king.medal||'none');m.textContent=king.medal?king.medal[0].toUpperCase():'';m.hidden=!king.medal;$('copyBtn').hidden=false;}
       else if(king.player)showEnd('King of the Hill!',`${king.name} absorbed all ${cats.length-1} cats in ${fmt(time)}, then swallowed the city and the whole of Cat Earth.`,false);
@@ -303,6 +308,8 @@ function hud(alive){
     $('hill').textContent=state==='count'?`${LV.name} · get ready…`:state==='finale'?`${LV.name} conquered!`:`${LV.name} · ${goalText(LV)} · ${fmt(time)}`;
     const top=alive.slice().sort((a,b)=>b.r-a.r);let rows=top.slice(0,5);if(player.alive&&!rows.includes(player))rows=rows.slice(0,4).concat(player);
     $('lb').innerHTML=rows.map(c=>`<li class="${c.player?'me':''}" value="${top.indexOf(c)+1}"><span>${esc(c.name)}</span><span>${Math.round(c.r)}</span></li>`).join('');return;}
+  if(mode==='clean'){const tot=junkTotal(CL);$('left').textContent=foods.length;$('pbarFill').style.width=((tot-foods.length)/tot*100)+'%';
+    $('hill').textContent=state==='count'?`${CL.name} · get ready…`:state==='finale'?'Spotless!':`${CL.name} · ${fmtT(time)} · ★★★ by ${fmtT(CL.t3)}`;return;}
   if(mode==='solo'){$('left').textContent=SOLO_GOAL;$('pbarFill').style.width=Math.min(100,player.r/SOLO_GOAL*100)+'%';
     const nx=MEDALS.find(([m,l])=>time<=l);$('hill').textContent=state==='finale'?'Max size!':`${mapName(TH_NAME)} · Time ${fmtT(time)}`+(nx?` · ${nx[0]} by ${fmtT(nx[1])}`:dayBest?` · today's best ${fmtT(dayBest)}`:'');return;}
   $('left').textContent=alive.length;

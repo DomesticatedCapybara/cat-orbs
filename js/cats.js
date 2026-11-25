@@ -92,7 +92,8 @@ function drawFood(f,z){
   ctx.translate(0,-lift+bob);
   ctx.globalAlpha=.22+.08*Math.sin(clock*4+f.ph);circ(ctx,0,0,r*(r>40?1.3:1.75),locked?PAL.danger:T.glow);ctx.globalAlpha=1;
   ctx.lineWidth=Math.max(2.5,2.5/z,r*.04);ctx.strokeStyle=T.glow;ctx.lineJoin='round';
-  if(T.k==='kibble'){ctx.beginPath();ctx.arc(0,0,r,0,7);ctx.fillStyle='#c7843f';ctx.fill();ctx.stroke();circ(ctx,-r*.3,-r*.3,r*.4,'#e6a865');}
+  if(T.junk)drawJunk(ctx,T,r,f.rot,f.hue);
+  else if(T.k==='kibble'){ctx.beginPath();ctx.arc(0,0,r,0,7);ctx.fillStyle='#c7843f';ctx.fill();ctx.stroke();circ(ctx,-r*.3,-r*.3,r*.4,'#e6a865');}
   else if(T.k==='goldfish'){ctx.rotate(f.rot);ctx.beginPath();ctx.ellipse(0,0,r,r*.5,0,0,7);ctx.moveTo(r*.8,0);ctx.lineTo(r*1.4,-r*.5);ctx.lineTo(r*1.4,r*.5);ctx.closePath();
     const gg=ctx.createLinearGradient(0,-r*.5,0,r*.5);gg.addColorStop(0,'#fff3a0');gg.addColorStop(1,'#e0a000');ctx.fillStyle=gg;ctx.fill();ctx.stroke();circ(ctx,-r*.55,-r*.1,r*.12,'#5a3a00');
     ctx.rotate(-f.rot);ctx.fillStyle='#fff';for(let i=0;i<3;i++){const a=clock*2+i*2.1,q=r*(.18+.1*Math.sin(clock*6+i));ctx.save();ctx.translate(Math.cos(a)*r*1.3,Math.sin(a)*r*1.3);ctx.rotate(clock);ctx.fillRect(-q/2,-q/8,q,q/4);ctx.fillRect(-q/8,-q/2,q/4,q);ctx.restore();}}
