@@ -28,6 +28,14 @@ const snd={
   level(){[523,659,784,1046].forEach((f,i)=>tone(f,.16,'triangle',.14,0,i*.08));},
   warn(){tone(330,.28,'square',.07,0,0);tone(247,.4,'square',.07,0,.3);},
   lose(){tone(392,.25,'sawtooth',.09,370,0);tone(349,.25,'sawtooth',.09,330,.27);tone(294,.7,'sawtooth',.09,150,.54);},
+  // a big satisfied burp: a gravelly, falling growl through a vowel-like filter
+  burp(){const a=SFX.ctx;if(!a||!SFX.on)return;const t=a.currentTime,o=a.createOscillator(),lf=a.createOscillator(),lg=a.createGain(),bp=a.createBiquadFilter(),lp=a.createBiquadFilter(),g=a.createGain();
+    o.type='sawtooth';o.frequency.setValueAtTime(105,t);o.frequency.linearRampToValueAtTime(132,t+.12);o.frequency.exponentialRampToValueAtTime(68,t+.52);
+    lf.type='square';lf.frequency.value=27;lg.gain.value=16;lf.connect(lg);lg.connect(o.frequency);
+    bp.type='bandpass';bp.Q.value=2.5;bp.frequency.setValueAtTime(480,t);bp.frequency.linearRampToValueAtTime(820,t+.15);bp.frequency.linearRampToValueAtTime(360,t+.52);
+    lp.type='lowpass';lp.frequency.value=1800;o.connect(bp);bp.connect(lp);lp.connect(g);g.connect(SFX.out);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.55,t+.03);g.gain.setValueAtTime(.45,t+.32);g.gain.exponentialRampToValueAtTime(.001,t+.58);
+    o.start(t);lf.start(t);o.stop(t+.62);lf.stop(t+.62);hiss(.4,.07,700,250,'bandpass');},
   win(){[523,659,784].forEach((f,i)=>tone(f,.18,'triangle',.16,0,i*.12));[523,659,784,1046].forEach(f=>tone(f,1.1,'triangle',.09,0,.4));}};
 
 // ---------- music (composed in code: menu meow tune + battle track that intensifies) ----------
@@ -153,7 +161,7 @@ function themeStep(s,t,sp){const M=THEME_MUS[TH_NAME]||THEME_MUS.bay,d=themeBus(
 const campMus=()=>state!=='menu'&&THEME_MUS[TH_NAME];
 function battleTarget(){if(state==='count')return .08;if(state==='finale')return 1;if(!player)return 0;
   if(mode==='solo')return Math.min(1,.15+.75*player.r/SOLO_GOAL+.1*Math.min(1,time/120));
-  const tot=mode==='camp'?LV.rivals:AI_COUNT;let v=Math.pow(1-(aliveN-1)/tot,.8);if(finalOn)v=Math.max(v,.86);
+  const tot=mode==='camp'?LV.rivals:AI_COUNT;let v=Math.pow(Math.max(0,1-(Math.min(aliveN,tot+1)-1)/tot),.8);if(finalOn)v=Math.max(v,.86);
   if(mode==='camp'&&LV.goal.type!=='win')v=Math.max(v,.9*(LV.goal.type==='size'?player.r/LV.goal.n:myCats/LV.goal.n));
   if(player.alive){const near=cats.some(c=>c.alive&&!c.player&&canEat(c,player)&&Math.hypot(c.x-player.x,c.y-player.y)<c.r+600);if(near)v+=.18;}
   return Math.max(.1,Math.min(1,v));}
@@ -166,7 +174,8 @@ function musicTick(dt){const a=SFX.ctx;if(!a||a.state!=='running')return;musInit
   if(want!==MUS.track){MUS.track=want;MUS.step=0;MUS.cycle=0;MUS.next=a.currentTime+.08;
     MUS.menu.gain.setTargetAtTime(want==='menu'?MENU_BOOST:0,a.currentTime,.35);MUS.battle.gain.setTargetAtTime(want==='battle'?1:0,a.currentTime,.35);}
   MUS.battle.gain.setTargetAtTime(want==='battle'?(paused?.3:1):0,a.currentTime,.2);
-  MUS.int+=(battleTarget()-MUS.int)*Math.min(1,dt*.6);
+  const bt=battleTarget();MUS.int+=((isFinite(bt)?bt:.3)-MUS.int)*Math.min(1,dt*.6);if(!isFinite(MUS.int))MUS.int=.3; // never let a bad value stall the music
+  if(!isFinite(MUS.next))MUS.next=a.currentTime+.05;
   if(!MUS.on){MUS.next=a.currentTime+.05;return;}
   if(MUS.next<a.currentTime-.3)MUS.next=a.currentTime+.05; // catch up after a hiccup
   while(MUS.next<a.currentTime+.15){

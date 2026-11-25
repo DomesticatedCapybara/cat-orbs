@@ -48,9 +48,6 @@ function drawMouth(g,c,r){const o=c.mo||0,mx=r*mouthX(c),w=r*(.1+.58*o),h=r*(.03
     if(o<.06){g.beginPath();g.moveTo(mx,ny+nh*.75);g.lineTo(mx,r*.4);g.stroke();}};
   if(o<.06){nose();g.strokeStyle=ink;g.lineWidth=Math.max(1,r*.035);g.lineCap='round';g.beginPath(); // closed: a little "w"
     g.arc(mx-r*.07,r*.4,r*.07,.15,Math.PI-.35);g.moveTo(mx+r*.14,r*.4);g.arc(mx+r*.07,r*.4,r*.07,.35,Math.PI-.15);g.stroke();return;}
-  if(o>.35&&!SET.lite&&(c.player||r*cam.z>40)){g.strokeStyle=`rgba(255,255,255,${.35*o})`;g.lineWidth=Math.max(1,r*.03);g.beginPath(); // suction streaks
-    for(let i=0;i<5;i++){const a=Math.PI*(-.05+1.1*i/4)+Math.sin(clock*3+i)*.08,f=1.3+.35*((clock*2+i*.37)%1),sx=Math.cos(a)*r*f,sy=Math.sin(a)*r*f+r*.2;
-      g.moveTo(sx,sy);g.quadraticCurveTo(sx*.45,(sy+my)*.55,mx+(sx-mx)*.12,my+(sy-my)*.12);}g.stroke();}
   g.fillStyle='#3a1520';g.beginPath();g.ellipse(mx,my,w,h,0,0,7);g.fill();
   g.fillStyle='#e9707f';g.beginPath();g.ellipse(mx,my+h*.45,w*.55,h*.42,0,0,7);g.fill();
   // fangs hang inside the mouth: each tooth's top edge follows the mouth's own curve, so it tucks
@@ -59,7 +56,20 @@ function drawMouth(g,c,r){const o=c.mo||0,mx=r*mouthX(c),w=r*(.1+.58*o),h=r*(.03
     for(const s of[-1,1]){const fx=mx+s*w*.42,t1=-Math.acos((fx-fw-mx)/w),t2=-Math.acos((fx+fw-mx)/w),ey=my-h*Math.sqrt(1-((fx-mx)/w)**2);
       g.beginPath();g.ellipse(mx,my,w,h,0,t1,t2,false);g.lineTo(fx,ey+fh);g.closePath();g.fill();}}
   g.strokeStyle='#1a0a0e';g.lineWidth=Math.max(1,r*.03);g.beginPath();g.ellipse(mx,my,w,h,0,0,7);g.stroke();
+  if(o>.35&&!SET.lite&&!(c.burpT>0)&&(c.player||r*cam.z>40))suction(g,r,mx,my,o); // no suction while burping
   nose();}
+// Suction: streaks of air curve in from around the cat, speed up as they're pulled and vanish into the mouth.
+// Drawn over the mouth so they visibly rush inside.
+const SUCK_N=7;
+function suction(g,r,mx,my,o){g.lineCap='round';
+  for(let i=0;i<SUCK_N;i++){const a=Math.PI*(-.14+1.28*i/(SUCK_N-1))+Math.sin(clock*1.7+i*2.1)*.1,R=r*(1.4+.12*Math.sin(i*1.9)); // from the sides and below, clear of the eyes
+    const sx=Math.cos(a)*R,sy=Math.sin(a)*R*.95+r*.1,dx=mx-sx,dy=my-sy,sw=(i%2?1:-1)*.22,cx=(sx+mx)/2-dy*sw,cy=(sy+my)/2+dx*sw;
+    const P=u=>{const v=1-u;return[v*v*sx+2*v*u*cx+u*u*mx,v*v*sy+2*v*u*cy+u*u*my];};
+    for(let j=0;j<2;j++){const ph=(clock*(1.6+.25*(i%3))+i*.37+j*.5)%1,u0=ph*ph,u1=Math.min(1,u0+.12+.3*ph); // ease-in: accelerates toward the mouth
+      const fade=Math.min(1,ph*4)*(1-Math.max(0,(u1-.82)/.18)),al=.8*o*fade;if(al<.02)continue;
+      g.strokeStyle=`rgba(255,255,255,${al})`;g.lineWidth=Math.max(1.5,r*.06*(1-u0*.65));g.beginPath();
+      for(let k=0;k<=5;k++){const[x,y]=P(u0+(u1-u0)*k/5);k?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();}}
+  g.lineCap='butt';}
 function drawEyes(g,c,f,r0,EX,EY,k){
   const r=r0*k,lx=c.look.x*r*.07,ly=c.look.y*r*.06;
   for(const s of[-1,1]){const ex=s*r0*EX+lx,ey=r0*EY+ly;

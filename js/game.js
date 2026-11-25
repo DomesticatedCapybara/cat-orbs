@@ -5,7 +5,7 @@ function start(){
   if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
   if(mode==='camp')LV=LEVELS[campUnl(camp.sel)?camp.sel:0];setTheme(mapFor(mode));
   setupWeather();
-  ufo=null;cats=[];eaten=[];foodEaten=[];parts=[];floats=[];time=0;arenaR=R0*1.42;finalOn=false;king=null;setCity(mode==='solo'?dailySeed():mode==='camp'?LV.seed:(Math.random()*4294967295)>>>0);buildProps();finT=0;endShown=false;recorded=false;myCats=0;myTreats=0;MILESTONES.forEach(m=>m.done=false);
+  ufo=null;aliveN=(mode==='solo'?0:mode==='camp'?LV.rivals:AI_COUNT)+1;cats=[];eaten=[];foodEaten=[];parts=[];floats=[];time=0;arenaR=R0*1.42;finalOn=false;king=null;setCity(mode==='solo'?dailySeed():mode==='camp'?LV.seed:(Math.random()*4294967295)>>>0);buildProps();finT=0;endShown=false;recorded=false;myCats=0;myTreats=0;MILESTONES.forEach(m=>m.done=false);
   wasUnl=FUR.map(isUnl);
   RNG=mode==='solo'?seeded(dailySeed()):Math.random; // same start for everyone on the same day
   foods=[];for(const T of FOODT.slice().reverse())for(let i=0;i<T.n;i++)foods.push(placeFood(T));
@@ -72,11 +72,17 @@ function alienFinale(dt){const k=king;
   if(!ufo.eaten){const q=Math.min(1,(finT-FIN_CITY)/1.6),e=q*q*(3-2*q);ufo.x=k.x+k.r*(1.7-.7*e);ufo.y=k.y-k.r*(1.95-.75*e);ufo.r=k.r*.45;
     if(finT>FIN_CITY+1.9){ufo.eaten=true;propEaten.push({p:{k:'ufo',x:ufo.x,y:ufo.y,r:ufo.r},by:k,k:0,spin:1,r:ufo.r});k.gulp=.6;k.pulse=.3;kick(14);snd.crunch(200);snd.slurp(200);
       toast('You ate the alien invader and its ship!');}}
-  else if(!ufo.said&&finT>FIN_CITY+3.6){ufo.said=1;toast('Cat Earth is safe!');}}
+  else if(!ufo.said&&finT>FIN_CITY+4.8){ufo.said=1;toast('Cat Earth is safe!');}}
 // once the winner is full, eating (and its sounds) stops: after swallowing Cat Earth, or in the campaign
 // once the city is filled (in the Alien Arena, once the invader's ship has been eaten)
 function doneEating(){if(state!=='finale'||!king)return false;if(king.earthDone)return true;
   if(mode==='camp')return LV.alien&&king.player?!!(ufo&&ufo.eaten&&finT>FIN_CITY+2.6):finT>FIN_CITY;return false;}
+// The winner is full: it closes its mouth, shuts its eyes contentedly, then lets out one quick burp before the results
+function burpTick(dt){const k=king;if(!k||!k.player||!doneEating())return;
+  if(!k.burped){if(!k.fullT)k.content=2.6;k.fullT=(k.fullT||0)+dt;
+    if(k.fullT>.8){k.burped=1;k.burpT=.42;snd.burp();kick(4);floats.push({x:k.x+k.r*(mouthX(k)+.62),y:k.y+k.r*.42,t:1.5,txt:'*burp*',col:'#fff4b0'});}}
+  else if(k.burpT>-2)k.burpT-=dt;}
+const burpDone=()=>!king||!king.player||!!king.burped&&king.burpT<=-.6;
 function campWin(){king=player;finT=0;state='finale';snd.win();stats.survived=time;if(!stats.frozen)stats.frozen=Object.assign({},stats);
   const rank=1+cats.filter(c=>c.alive&&!c.player&&c.r>player.r).length;record(rank,false);
   camp.res[LEVELS.indexOf(LV)]=campPlaces();saveCamp();
@@ -172,7 +178,7 @@ function update(dt){
     if(c.player&&c.wasDashing&&c.dash<=0){c.wasDashing=false;const t=c.dashThreat;c.dashThreat=null; // close call: you dashed clear of a cat that was about to eat you
       if(t&&t.alive&&c.alive&&Math.hypot(t.x-c.x,t.y-c.y)-t.r-c.r>200)dashRefund(c,.5,'Close call! +½ dash');}
     if(c.player&&c.holdT>0)c.holdT-=dt;
-    else if(c.player&&c.charges<DASH_MAX){c.chargeT+=dt;const need=dashNeed(c);if(c.chargeT>=need){c.charges++;c.chargeT=c.charges<DASH_MAX?c.chargeT-need:0;tone(760,.06,'triangle',.06,980);}}c.wt-=dt;c.blink-=dt;if(c.blink<-.12)c.blink=rnd(2,6);
+    else if(c.player&&c.charges<DASH_MAX){c.chargeT+=dt;const need=dashNeed(c);if(c.chargeT>=need){c.charges++;c.chargeT=c.charges<DASH_MAX?c.chargeT-need:0;tone(760,.06,'triangle',.06,980);}}c.wt-=dt;if(c.content>0){c.content-=dt;c.blink=-.05;}else{c.blink-=dt;if(c.blink<-.12)c.blink=rnd(2,6);}
     if(c.player&&c===player&&state!=='dead')playerInput(c);
     else if(!c.player){c.think-=dt;if(c.think<=0){c.think=D().think;think(c);}}
     if(c.buff)for(const k in c.buff)c.buff[k]-=dt;
@@ -228,7 +234,7 @@ function update(dt){
   foodEaten=flyTick(foodEaten,dt,.42);
   // mouths: open while gulping; yours also opens in anticipation when something edible is within reach
   for(const c of live){if(!c.alive)continue;c.gulp=fed?0:(c.gulp||0)-dt;let tgt=c.gulp>0?1:0;
-    if(fed)tgt=0;
+    if(fed)tgt=c.burpT>0?.62:0; // a full winner keeps its mouth shut… except for one quick burp
     else if(c.player&&tgt<1&&(c.nearT=(c.nearT||0)+1)%3!==0)tgt=c.nearPrev||0;
     else if(c.player&&tgt<1){const R=c.r+Math.max(28,c.r*.5);let near=false;
       for(const f of foods){if(Math.abs(f.x-c.x)<R&&Math.abs(f.y-c.y)<R&&canEatF(c,f)&&Math.hypot(f.x-c.x,f.y-c.y)<R){near=true;break;}}
@@ -266,7 +272,7 @@ function update(dt){
     if(king.player){stats.survived=time;record(1,true);if(mode==='camp'){camp.res[LEVELS.indexOf(LV)]=campPlaces();king.camp=campComplete(time);}}
     if(!stats.frozen)stats.frozen=Object.assign({},stats); // the match is decided: the finale doesn't count
     state='finale';if(king.player)snd.win();toast(king.player?'You are King of the Hill!':`${king.name} is King of the Hill`);}
-  if(state==='finale'){finT+=dt;
+  if(state==='finale'){finT+=dt;burpTick(dt);
     arenaR+=(R0*1.42-arenaR)*Math.min(1,dt*1.2);
     const alienEnd=mode==='camp'&&LV.alien&&king.player,noEarth=mode==='camp'&&!LV.earth;
     if(alienEnd)alienFinale(dt);
@@ -274,7 +280,7 @@ function update(dt){
     else{const k=Math.min(1,(finT-FIN_CITY)/FIN_EARTH),e=k*k*(3-2*k),r0=R0*1.45,r1=PLANET_R*1.06;king.t=r0*Math.pow(r1/r0,e);
       if(!king.earthSaid&&finT>FIN_CITY+.6){king.earthSaid=1;toast('The city was just the start… Cat Earth!');}
       if(!king.earthDone&&k>=1){king.earthDone=1;toast(king.player?'You swallowed the whole planet!':`${king.name} swallowed Cat Earth!`);kick(14);}}
-    if(finT>(alienEnd?FIN_CITY+8:noEarth?FIN_CITY+.8:FIN_CITY+FIN_EARTH+2)&&!endShown){endShown=true;
+    if(finT>(alienEnd?FIN_CITY+8:noEarth?FIN_CITY+.8:FIN_CITY+FIN_EARTH+2)&&!endShown&&burpDone()){endShown=true;
       if(mode==='camp')showCampEnd();
       else if(mode==='solo'){showEnd(king.medal?`${king.medal[0].toUpperCase()+king.medal.slice(1)} medal!`:'Max size!',king.soloText,false);
         const m=$('medal');m.className='medal '+(king.medal||'none');m.textContent=king.medal?king.medal[0].toUpperCase():'';m.hidden=!king.medal;$('copyBtn').hidden=false;}
@@ -283,7 +289,7 @@ function update(dt){
   const focus=player.alive?player:alive.reduce((m,c)=>c.r>m.r?c:m,alive[0]);
   if(focus){cam.x+=(focus.x-cam.x)*Math.min(1,dt*5);cam.y+=(focus.y-cam.y)*Math.min(1,dt*5);
     const base=dev==='duo'?1.0:dev==='max'?.86:Math.min(W,H)/760;
-    const tz=state==='finale'&&mode==='camp'&&LV.alien&&king&&king.player&&finT>FIN_CITY+3.2?Math.min(W,H)/(PLANET_R*2.7):state==='finale'?Math.max(.0004,Math.min(1.25,Math.min(W,H)/(Math.max(2.4*focus.r,finT>FIN_CITY?Math.min(PLANET_R*2.9,focus.r*5):0)))):Math.max(.14,Math.min(1.25,base*Math.pow(30/focus.r,ZOOM_OUT)));
+    const tz=state==='finale'&&mode==='camp'&&LV.alien&&king&&king.player&&finT>FIN_CITY+4.4?Math.min(W,H)/(PLANET_R*2.7):state==='finale'?Math.max(.0004,Math.min(1.25,Math.min(W,H)/(Math.max(2.4*focus.r,finT>FIN_CITY?Math.min(PLANET_R*2.9,focus.r*5):0)))):Math.max(.14,Math.min(1.25,base*Math.pow(30/focus.r,ZOOM_OUT)));
     cam.z+=(tz-cam.z)*Math.min(1,dt*(state==='finale'?1.5:2));}
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').style.opacity=0;}
   lbTimer-=dt;if(lbTimer<=0){lbTimer=.25;hud(alive);}
