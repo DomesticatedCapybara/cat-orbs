@@ -126,17 +126,17 @@ let paused=false,cdT=0,cdShown=0;
 function countdown(dt){cdT-=dt;const n=Math.ceil(cdT);
   if(n!==cdShown&&n>0){cdShown=n;showCount(String(n));tone(520,.14,'triangle',.18);}
   if(cdT<=0){state='play';showCount('Go!');tone(880,.25,'triangle',.2);tone(1320,.3,'triangle',.12,0,.05);
-    toast(mode==='clean'?`Clean up ${CL.name}! Clear each area and the job site grows`:mode==='solo'?`Reach size ${SOLO_GOAL}, fast!`:mode==='camp'?`${LV.name}: ${goalText(LV)}!`:`Rivals leave you alone for ${GRACE} seconds`+(nemName?`. Watch out for ${nemName}, your nemesis!`:''));}}
+    toast(mode==='clean'?`Clean up ${CL.name}: swallow every piece of junk!`:mode==='solo'?`Reach size ${SOLO_GOAL}, fast!`:mode==='camp'?`${LV.name}: ${goalText(LV)}!`:`Rivals leave you alone for ${GRACE} seconds`+(nemName?`. Watch out for ${nemName}, your nemesis!`:''));}}
 function showCount(t){const e=$('count');e.textContent=t;e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop');}
 function setPause(on){if(on&&state==='menu')return;paused=on;$('pauseOv').hidden=!on;joy.id=null;keys={};
-  if(on)$('pauseInfo').textContent=mode==='clean'?`Time ${fmtT(time)} · area ${cleanStage+1} of ${CL.stages.length} · ${cleanLeft()} pieces of junk left`:mode==='solo'?`Time ${fmtT(time)} · size ${Math.round(player.r)} of ${SOLO_GOAL}`:`Size ${Math.round(player.alive?player.r:0)} · ${cats.filter(c=>c.alive).length} cats left`;}
+  if(on)$('pauseInfo').textContent=mode==='clean'?`Time ${fmtT(time)} · ${foods.length} pieces of junk left`:mode==='solo'?`Time ${fmtT(time)} · size ${Math.round(player.r)} of ${SOLO_GOAL}`:`Size ${Math.round(player.alive?player.r:0)} · ${cats.filter(c=>c.alive).length} cats left`;}
 function toMenu(){hideSay();ambient('none');paused=false;$('pauseOv').hidden=true;$('end').hidden=true;buildFurs();setMode(mode);$('menu').hidden=false;state='menu';document.body.classList.remove('playing');['stats','board','mini'].forEach(i=>$(i).hidden=true);}
 let errCount=0;
 let comboShown='';
 let buffShown='';
 function buffHud(){let t='';if(player&&player.alive&&player.buff)for(const k in PU)if(player.buff[k]>0)t+=`<span style="--bc:${PU[k].col}">${PU[k].n} ${Math.ceil(player.buff[k])}s</span>`;
   if(t!==buffShown){buffShown=t;$('buffs').innerHTML=t;}}
-function comboHud(){const t=combo>=3&&state==='play'&&player&&player.alive?(mode==='clean'?`<b>Streak ${combo}</b> ×${comboMult().toFixed(2)} growth · −${cleanBonus.toFixed(1)}s`:`<b>×${comboMult().toFixed(2)}</b> combo ${combo}`):'';
+function comboHud(){const t=combo>=3&&state==='play'&&player&&player.alive?(mode==='clean'?`<b>Streak ${combo}</b> ×${comboMult().toFixed(2)} growth · −${cleanCut().toFixed(1)}s`:`<b>×${comboMult().toFixed(2)}</b> combo ${combo}`):'';
   if(t!==comboShown){comboShown=t;const e=$('combo');e.innerHTML=t;e.classList.toggle('on',!!t);}
   if(t)$('combo').style.opacity=String(.45+.55*Math.min(1,comboT/(mode==='clean'?STREAK_WINDOW:COMBO_WINDOW)));}
 function loop(now){requestAnimationFrame(loop);const rdt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;clock+=rdt;

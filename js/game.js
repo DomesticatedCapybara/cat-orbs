@@ -4,12 +4,12 @@ function start(){
   if(mode==='camp'&&LEVELS[camp.sel]&&LEVELS[camp.sel].alien&&campUnl(camp.sel)&&!camp.sawIntro){camp.sawIntro=1;saveCamp();showStory(ARENA_STORY(),start);return;}
   if(mode==='clean'&&!clean.sawIntro){clean.sawIntro=1;saveClean();showStory(CREW_STORY,start);return;}
   if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
-  if(mode==='camp')LV=LEVELS[campUnl(camp.sel)?camp.sel:0];if(mode==='clean')CL=CLEAN_LEVELS[cleanUnl(clean.sel)?clean.sel:0];setTheme(mapFor(mode));cleanStage=0;setIsland(mode==='clean'?CL.stages[0].k:6);
+  if(mode==='camp')LV=LEVELS[campUnl(camp.sel)?camp.sel:0];if(mode==='clean')CL=CLEAN_LEVELS[cleanUnl(clean.sel)?clean.sel:0];setTheme(mapFor(mode));setIsland(mode==='clean'?CL.k:6);
   setupWeather();
   ufo=null;aliveN=(mode==='solo'||mode==='clean'?0:mode==='camp'?LV.rivals:AI_COUNT)+1;cats=[];eaten=[];foodEaten=[];parts=[];floats=[];time=0;arenaR=R0*1.42;finalOn=false;king=null;setCity(mode==='solo'?dailySeed():mode==='camp'?LV.seed:mode==='clean'?CL.seed:(Math.random()*4294967295)>>>0);buildProps();finT=0;endShown=false;recorded=false;myCats=0;myTreats=0;MILESTONES.forEach(m=>m.done=false);
   wasUnl=FUR.map(isUnl);
   RNG=mode==='solo'?seeded(dailySeed()):Math.random; // same start for everyone on the same day
-  if(mode==='clean'){foods=[];placeJunk(0);cleanBonus=0;cleanBest=0;for(const p of props)if(p.k==='bldg')p.out=1;} // a small island full of junk; buildings aren't part of the job
+  if(mode==='clean'){placeJunk();setUpJobSite();cleanBonus=0;cleanBest=0;} // a small island full of junk; buildings aren't part of the job
   else{foods=[];for(const T of FOODT.slice().reverse())for(let i=0;i<T.n;i++)foods.push(placeFood(T));}
   const nm=($('nameIn').value.trim()||'You').slice(0,14);
   const pf=isUnl(FUR[prog.pick]||FUR[0])?FUR[prog.pick]:FUR[0];
@@ -44,7 +44,7 @@ function toast(t){const el=$('toast');el.textContent=t;el.style.opacity=1;toastT
 const SPEED_BASE=250,SPEED_GROW=0,SPEED_CAP_R=600;
 const ZOOM_OUT=.4; // how strongly the camera pulls back as you grow (was .55)
 let nemName='';
-const speedOf=c=>SPEED_BASE*Math.pow(Math.min(c.r,SPEED_CAP_R)/22,SPEED_GROW)*(c.dash>0?2.1:1)*(c.buff&&c.buff.catnip>0?1.6:1);
+const speedOf=c=>SPEED_BASE*Math.pow(Math.min(c.r,SPEED_CAP_R)/22,SPEED_GROW)*(mode==='clean'&&c.player?Math.min(2.6,Math.max(1,Math.sqrt(c.r/60))):1)*(c.dash>0?2.1:1)*(c.buff&&c.buff.catnip>0?1.6:1);
 const shielded=c=>c.buff&&c.buff.shield>0;
 const agilityOf=c=>12*Math.sqrt(22/c.r);
 // Pull-in: from this size, nearby crumbs (items much smaller than you) drift into you
@@ -247,7 +247,7 @@ function update(dt){
       if(!near)for(const o of cats)if(o.alive&&o!==c&&canEat(c,o)&&Math.hypot(o.x-c.x,o.y-c.y)<R+o.r){near=true;break;}
       if(near)tgt=.7;c.nearPrev=tgt;}
     c.mo=(c.mo||0)+(tgt-(c.mo||0))*Math.min(1,dt*14);}
-  if(player.alive)for(const m of MILESTONES)if(!m.done&&player.r>m.need){m.done=true;toast(`You can eat ${m.name} now!`);snd.level();}
+  if(player.alive&&mode!=='clean')for(const m of MILESTONES)if(!m.done&&player.r>m.need){m.done=true;toast(`You can eat ${m.name} now!`);snd.level();}
   const cnt=new Map();for(const f of foods)cnt.set(f.T,(cnt.get(f.T)||0)+1);
   const af=finalOn?Math.min(1,Math.PI*arenaR*arenaR/(4*R0*R0)):1;
   if(mode==='clean'&&state==='play')junkTick(dt);
@@ -264,7 +264,7 @@ function update(dt){
     if(arenaR>target)arenaR=Math.max(target,arenaR-sp*dt);}
   // campaign goals: reaching a size or absorbing enough cats conquers the continent
   if(mode==='camp'&&!king&&state==='play'&&player.alive&&(LV.goal.type==='size'&&player.r>=LV.goal.n||LV.goal.type==='cats'&&myCats>=LV.goal.n))campWin();
-  if(mode==='clean'&&!king&&state==='play'&&player.alive&&!foods.length){if(cleanStage<CL.stages.length-1)expandSite();else cleanWin();} // done only when every area is spotless
+  if(mode==='clean'&&!king&&state==='play'&&player.alive&&!foods.length)cleanWin(); // done only when the whole island is spotless
   // last cat standing: start the finale, where the king swells to fill the city
   if(mode==='solo'&&!king&&player.r>=SOLO_GOAL){king=player;finT=0;state='finale';snd.win();
     const t=time,isBest=!soloBest||t<soloBest,isDay=!dayBest||t<dayBest;
@@ -311,8 +311,8 @@ function hud(alive){
     $('hill').textContent=state==='count'?`${LV.name} · get ready…`:state==='finale'?`${LV.name} conquered!`:`${LV.name} · ${goalText(LV)} · ${fmt(time)}`;
     const top=alive.slice().sort((a,b)=>b.r-a.r);let rows=top.slice(0,5);if(player.alive&&!rows.includes(player))rows=rows.slice(0,4).concat(player);
     $('lb').innerHTML=rows.map(c=>`<li class="${c.player?'me':''}" value="${top.indexOf(c)+1}"><span>${esc(c.name)}</span><span>${Math.round(c.r)}</span></li>`).join('');return;}
-  if(mode==='clean'){const tot=junkTotal(CL);$('left').textContent=foods.length;$('pbarFill').style.width=((tot-cleanLeft())/tot*100)+'%';
-    $('hill').textContent=state==='count'?`${CL.name} · get ready…`:state==='finale'?'Spotless!':`${CL.name} · area ${cleanStage+1}/${CL.stages.length} · ${fmtT(cleanTime())}`+(cleanBonus>.05?` (−${cleanBonus.toFixed(1)}s streak)`:'')+` · ★★★ by ${fmtT(CL.t3)}`;return;}
+  if(mode==='clean'){const tot=cleanTotal||1;$('left').textContent=foods.length;$('pbarFill').style.width=((tot-foods.length)/tot*100)+'%';
+    $('hill').textContent=state==='count'?`${CL.name} · get ready…`:state==='finale'?'Spotless!':`${CL.name} · ${fmtT(cleanTime())}`+(cleanCut()>.05?` (−${cleanCut().toFixed(1)}s streak)`:'')+` · ★★★ by ${fmtT(CL.t3)}`;return;}
   if(mode==='solo'){$('left').textContent=SOLO_GOAL;$('pbarFill').style.width=Math.min(100,player.r/SOLO_GOAL*100)+'%';
     const nx=MEDALS.find(([m,l])=>time<=l);$('hill').textContent=state==='finale'?'Max size!':`${mapName(TH_NAME)} · Time ${fmtT(time)}`+(nx?` · ${nx[0]} by ${fmtT(nx[1])}`:dayBest?` · today's best ${fmtT(dayBest)}`:'');return;}
   $('left').textContent=alive.length;

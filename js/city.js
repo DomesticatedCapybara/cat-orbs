@@ -233,7 +233,7 @@ function drawProps(z,vl,vt,vw,vh){const lo=z*DPR<.32,m=60;
 }
 
 // ground is cached: a low-detail whole map, plus detailed chunks near the camera
-const LEXT=3100,LOW=.15,lowCv=document.createElement('canvas');
+const LEXT=3700,LOW=.15,lowCv=document.createElement('canvas');
 lowCv.width=lowCv.height=Math.ceil(LEXT*2*LOW);
 function drawLow(){const g=lowCv.getContext('2d');g.setTransform(1,0,0,1,0,0);g.scale(LOW,LOW);g.translate(LEXT,LEXT);drawCity(g,-LEXT,-LEXT,LEXT,LEXT);}
 drawLow();
