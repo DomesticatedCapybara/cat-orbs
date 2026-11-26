@@ -1,6 +1,6 @@
 // Cat Orbs offline support. The first visit saves the game on the device; after that it opens with no signal.
 // Bump VERSION with each release so phones fetch the new files (they switch over on the next launch).
-const VERSION='catorb-v2.3.0';
+const VERSION='catorb-v2.3.3';
 const FILES=['./','index.html','css/game.css','js/core.js','js/world.js','js/campaign.js','js/cleanup.js','js/city.js','js/cats.js','js/audio.js','js/game.js','js/weather.js','js/tips.js','js/render.js','js/ui.js',
   'img/cat-head-fill.png','img/cat-head-line.png','img/cat-head-face.png','icon-180.png','icon-192.png','icon-512.png','manifest.webmanifest'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));});

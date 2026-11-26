@@ -1,6 +1,6 @@
 // Cat Orbs: Conquerors of Cat Earth - world constants, treats, modes, medals
 // ---------- world ----------
-const R0=2800; // the whole city is open until only a few cats remain
+let R0=2800; // half-width of the square island city (smaller for Clean-up Crew jobs, see setIsland)
 const FINAL_N=5,FINAL_SPEED=24,FINAL_MIN=450,ARENA_SPEED=11; // final circle: starts at 5 cats left, shrinks 24 units/sec
 let foodEaten=[],cats=[],player=null,eaten=[],parts=[],floats=[],foods=[];
 let finalOn=false,state='menu',time=0,clock=0,cam={x:0,y:0,z:1},arenaR=R0*1.42,king=null,finT=0,endShown=false,recorded=false;
@@ -70,7 +70,7 @@ const MILESTONES=[{name:'trees',need:12*1.2},{name:'cars',need:19*CAR_S*1.2},{na
 const COMBO_WINDOW=1.4;let combo=0,comboT=0,shakeA=0,slowT=0;
 let RM=false;try{RM=matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
 const comboMult=()=>1+.5*Math.min(1,Math.max(0,combo-2)/22);
-function comboHit(){combo=comboT>0?combo+1:1;comboT=COMBO_WINDOW;if(stats)stats.combo=Math.max(stats.combo,combo);}
+function comboHit(){combo=comboT>0?combo+1:1;comboT=mode==='clean'?STREAK_WINDOW:COMBO_WINDOW;if(stats)stats.combo=Math.max(stats.combo,combo);}
 // ---------- King of the Hill tuning ----------
 // vis: how far rivals notice things; think: seconds between decisions; dash: how keen they are to dash; grow: how much rivals grow from food; chase: how hard they hunt you
 const DIFF={easy:{vis:.7,think:.36,dash:.45,grow:.85,chase:.7},normal:{vis:1,think:.22,dash:1,grow:1,chase:1},hard:{vis:1.3,think:.14,dash:1.5,grow:1.12,chase:1.35}};

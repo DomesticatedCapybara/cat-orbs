@@ -4,13 +4,12 @@ function start(){
   if(mode==='camp'&&LEVELS[camp.sel]&&LEVELS[camp.sel].alien&&campUnl(camp.sel)&&!camp.sawIntro){camp.sawIntro=1;saveCamp();showStory(ARENA_STORY(),start);return;}
   if(mode==='clean'&&!clean.sawIntro){clean.sawIntro=1;saveClean();showStory(CREW_STORY,start);return;}
   if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
-  if(mode==='camp')LV=LEVELS[campUnl(camp.sel)?camp.sel:0];if(mode==='clean')CL=CLEAN_LEVELS[cleanUnl(clean.sel)?clean.sel:0];setTheme(mapFor(mode));
+  if(mode==='camp')LV=LEVELS[campUnl(camp.sel)?camp.sel:0];if(mode==='clean')CL=CLEAN_LEVELS[cleanUnl(clean.sel)?clean.sel:0];setTheme(mapFor(mode));cleanStage=0;setIsland(mode==='clean'?CL.stages[0].k:6);
   setupWeather();
   ufo=null;aliveN=(mode==='solo'||mode==='clean'?0:mode==='camp'?LV.rivals:AI_COUNT)+1;cats=[];eaten=[];foodEaten=[];parts=[];floats=[];time=0;arenaR=R0*1.42;finalOn=false;king=null;setCity(mode==='solo'?dailySeed():mode==='camp'?LV.seed:mode==='clean'?CL.seed:(Math.random()*4294967295)>>>0);buildProps();finT=0;endShown=false;recorded=false;myCats=0;myTreats=0;MILESTONES.forEach(m=>m.done=false);
   wasUnl=FUR.map(isUnl);
   RNG=mode==='solo'?seeded(dailySeed()):Math.random; // same start for everyone on the same day
-  if(mode==='clean'){finalOn=true;arenaR=CL.zone;placeJunk(); // outside the fence: props can't be eaten or highlighted, critters are gone
-    for(const p of props)if(Math.hypot(p.x,p.y)>arenaR-p.r*.3)p.out=1;critters=critters.filter(m=>Math.hypot(m.x,m.y)<arenaR-30);} // the job site: a fenced circle full of junk, no fresh treats
+  if(mode==='clean'){foods=[];placeJunk(0);cleanBonus=0;cleanBest=0;for(const p of props)if(p.k==='bldg')p.out=1;} // a small island full of junk; buildings aren't part of the job
   else{foods=[];for(const T of FOODT.slice().reverse())for(let i=0;i<T.n;i++)foods.push(placeFood(T));}
   const nm=($('nameIn').value.trim()||'You').slice(0,14);
   const pf=isUnl(FUR[prog.pick]||FUR[0])?FUR[prog.pick]:FUR[0];
@@ -109,7 +108,7 @@ function record(place,won){
 }
 function statsHtml(){if(!stats||mode==='solo')return'';const s=stats.frozen||stats,t=s.survived||time;
   const rows=[['Peak size',Math.round(s.peak)],['Cats absorbed',s.cats],['Things eaten',s.items],['Buildings',s.bldg],['Cars & vans',s.cars],['Trees & bushes',s.trees],['Pigeons & mice',s.critters],['Best combo',s.combo],['Power-ups',s.pu],[mode==='camp'||mode==='clean'?'Time':'Time survived',fmt(t)]];
-  return rows.filter(([k])=>mode!=='clean'||k!=='Cats absorbed'&&k!=='Power-ups').map(([k,v])=>`<div><span>${k}</span><b>${v}</b></div>`).join('');}
+  return rows.filter(([k])=>mode!=='clean'||k!=='Cats absorbed'&&k!=='Power-ups'&&k!=='Buildings').map(([k,v])=>`<div><span>${k}</span><b>${v}</b></div>`).join('');}
 function showEnd(title,text,watch){hideSay();$('nextBtn').hidden=true;$('againBtn').textContent=mode==='camp'?'Try again':'Play again';$('endStats').innerHTML=statsHtml();$('endTitle').textContent=title;$('endText').textContent=text;$('watchBtn').hidden=!watch;$('medal').hidden=true;$('copyBtn').hidden=true;$('copyBtn').textContent='Copy result';$('end').hidden=false;}
 function resultText(){const md=king&&king.medal;const url=/^https?:/.test(location.protocol)&&!/claude\.ai/.test(location.host)?'\n'+location.href:'';
   return`Cat Orbs · Grow Rush · ${dayLabel()} city\nReached size ${SOLO_GOAL} in ${fmtT(king.soloT)}${md?` (${md} medal)`:''}\nCan you beat it?${url}`;}
@@ -200,11 +199,12 @@ function update(dt){
   const fed=doneEating();
   for(const c of live){const mg=c.buff&&c.buff.magnet>0;if(fed||!c.alive||(c.r<MAGNET_R&&!c.player&&!mg))continue;
     const pm=c.player&&c.r<MAGNET_R*2, /* player assist: a small pull-in from the start */
-      PR=mg?c.r*2.6+80:pm?Math.max(c.r*MAGNET_RANGE,c.r+PLAYER_PULL):c.r*MAGNET_RANGE,pull=(mg?300+c.r:pm?220:120+c.r*.8)*dt,lim=mg?.65:pm?.6:MAGNET_SMALL;
+      vac=mode==='clean'&&c.player, /* Clean-up Crew: a generous vacuum */
+      PR=vac?Math.max(c.r*2,c.r+110):mg?c.r*2.6+80:pm?Math.max(c.r*MAGNET_RANGE,c.r+PLAYER_PULL):c.r*MAGNET_RANGE,pull=(vac?280+c.r:mg?300+c.r:pm?220:120+c.r*.8)*dt,lim=vac?.8:mg?.65:pm?.6:MAGNET_SMALL;
     const tug=o=>{if(o.out||c.r<=o.r*EAT||o.r>c.r*lim)return;const dx=c.x-o.x,dy=c.y-o.y;if(Math.abs(dx)>PR||Math.abs(dy)>PR)return;
       const d=Math.hypot(dx,dy);if(d>PR||d<1)return;const st=Math.min(d,pull*(1.25-d/PR));o.x+=dx/d*st;o.y+=dy/d*st;};
     for(const f of foods)tug(f);
-    eachProp(c.x-PR-CELL,c.y-PR-CELL,c.x+PR+CELL,c.y+PR+CELL,p=>{if(p.k!=='bldg')tug(p);});}
+    if(mode!=='clean')eachProp(c.x-PR-CELL,c.y-PR-CELL,c.x+PR+CELL,c.y+PR+CELL,p=>{if(p.k!=='bldg')tug(p);});}
   for(let i=fed?-1:foods.length-1;i>=0;i--){const f=foods[i];
     if(finalOn&&Math.hypot(f.x,f.y)>arenaR+f.r){foods.splice(i,1);continue;}
     for(const c of live){if(!c.alive)continue;const dx=f.x-c.x,dy=f.y-c.y,reach=c.r+f.r;
@@ -212,6 +212,7 @@ function update(dt){
       if(Math.hypot(dx,dy)<(f.r<14?c.r+f.r*.3:c.r-f.r*.4)){
         if(c.player)comboHit();c.t=Math.sqrt(c.t*c.t+f.v*f.v*ITEM_GROWTH*(c.player?PLAYER_BONUS*comboMult():D().grow));c.pulse=.25;c.gulp=.35;foods.splice(i,1);foodEaten.push({p:f,by:c,k:0,spin:Math.random()<.5?1:-1});if(c.player&&f.r>=46)kick(Math.min(9,2+f.r*.04));if(c.player&&c.dash>0&&f.r>=BIG_CATCH)dashRefund(c,.5,'Big catch! +½ dash');
         if(f.T.big)burst(f.x,f.y,f.T.glow,10);
+        if(c.player&&mode==='clean')junkEaten(f);
         if(c.player){myTreats++;stats.items++;if(f.T.big){snd.crunch(f.r);snd.slurp(f.r);}else{snd.pick(f.r);if(f.r>=11)snd.slurp(f.r);}floats.push({x:f.x,y:f.y-f.r,t:f.T.big?1:.6,txt:f.T.big?'+'+Math.round(f.v/2):'+'});}
         break;}}}
   for(const c of live){if(fed||!c.alive)continue;
@@ -263,7 +264,7 @@ function update(dt){
     if(arenaR>target)arenaR=Math.max(target,arenaR-sp*dt);}
   // campaign goals: reaching a size or absorbing enough cats conquers the continent
   if(mode==='camp'&&!king&&state==='play'&&player.alive&&(LV.goal.type==='size'&&player.r>=LV.goal.n||LV.goal.type==='cats'&&myCats>=LV.goal.n))campWin();
-  if(mode==='clean'&&!king&&state==='play'&&player.alive&&!foods.length)cleanWin();
+  if(mode==='clean'&&!king&&state==='play'&&player.alive&&!foods.length){if(cleanStage<CL.stages.length-1)expandSite();else cleanWin();} // done only when every area is spotless
   // last cat standing: start the finale, where the king swells to fill the city
   if(mode==='solo'&&!king&&player.r>=SOLO_GOAL){king=player;finT=0;state='finale';snd.win();
     const t=time,isBest=!soloBest||t<soloBest,isDay=!dayBest||t<dayBest;
@@ -310,8 +311,8 @@ function hud(alive){
     $('hill').textContent=state==='count'?`${LV.name} · get ready…`:state==='finale'?`${LV.name} conquered!`:`${LV.name} · ${goalText(LV)} · ${fmt(time)}`;
     const top=alive.slice().sort((a,b)=>b.r-a.r);let rows=top.slice(0,5);if(player.alive&&!rows.includes(player))rows=rows.slice(0,4).concat(player);
     $('lb').innerHTML=rows.map(c=>`<li class="${c.player?'me':''}" value="${top.indexOf(c)+1}"><span>${esc(c.name)}</span><span>${Math.round(c.r)}</span></li>`).join('');return;}
-  if(mode==='clean'){const tot=junkTotal(CL);$('left').textContent=foods.length;$('pbarFill').style.width=((tot-foods.length)/tot*100)+'%';
-    $('hill').textContent=state==='count'?`${CL.name} · get ready…`:state==='finale'?'Spotless!':`${CL.name} · ${fmtT(time)} · ★★★ by ${fmtT(CL.t3)}`;return;}
+  if(mode==='clean'){const tot=junkTotal(CL);$('left').textContent=foods.length;$('pbarFill').style.width=((tot-cleanLeft())/tot*100)+'%';
+    $('hill').textContent=state==='count'?`${CL.name} · get ready…`:state==='finale'?'Spotless!':`${CL.name} · area ${cleanStage+1}/${CL.stages.length} · ${fmtT(cleanTime())}`+(cleanBonus>.05?` (−${cleanBonus.toFixed(1)}s streak)`:'')+` · ★★★ by ${fmtT(CL.t3)}`;return;}
   if(mode==='solo'){$('left').textContent=SOLO_GOAL;$('pbarFill').style.width=Math.min(100,player.r/SOLO_GOAL*100)+'%';
     const nx=MEDALS.find(([m,l])=>time<=l);$('hill').textContent=state==='finale'?'Max size!':`${mapName(TH_NAME)} · Time ${fmtT(time)}`+(nx?` · ${nx[0]} by ${fmtT(nx[1])}`:dayBest?` · today's best ${fmtT(dayBest)}`:'');return;}
   $('left').textContent=alive.length;

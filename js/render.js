@@ -68,7 +68,7 @@ function drawArrows(){
     const o=offscreen(c.x,c.y,c.r);if(!o)continue;const d=Math.hypot(c.x-player.x,c.y-player.y);if(d>range)continue;
     (t?th:pr).push({sx:o[0],sy:o[1],d,col:t?PAL.danger:PAL.edible,lbl:String(Math.round(c.r)),pulse:t,kind:t?'danger':'prey'});}
   th.sort((a,b)=>a.d-b.d);pr.sort((a,b)=>a.d-b.d);out.push(...th.slice(0,3),...pr.slice(0,2));
-  if(mode==='clean'&&player.alive){const o0=junkTarget(),o=o0&&offscreen(o0.x,o0.y,o0.r);if(o)out.push({sx:o[0],sy:o[1],d:Math.hypot(o0.x-player.x,o0.y-player.y),col:PAL.gold,lbl:'',pulse:false,kind:'target'});}
+  if(mode==='clean'&&player.alive&&foods.length<=CLEAN_ARROWS)for(const f of foods){const o=offscreen(f.x,f.y,f.r);if(o)out.push({sx:o[0],sy:o[1],d:Math.hypot(f.x-player.x,f.y-player.y),col:PAL.gold,lbl:'',pulse:false,kind:'target'});} // the last few pieces get arrows
   if(mode==='solo'){let best=null,bs=0;const cand=o=>{if(!canEatF(player,o)||o.r<player.r*.3)return;const d=Math.hypot(o.x-player.x,o.y-player.y);if(d>range*1.5)return;
       const sc=o.v*o.v/(d+200);if(sc>bs&&offscreen(o.x,o.y,o.r)){bs=sc;best=o;}};
     for(const f of foods)if(f.T.big)cand(f);for(const p of props)if(p.alive)cand(p);
@@ -126,19 +126,19 @@ let paused=false,cdT=0,cdShown=0;
 function countdown(dt){cdT-=dt;const n=Math.ceil(cdT);
   if(n!==cdShown&&n>0){cdShown=n;showCount(String(n));tone(520,.14,'triangle',.18);}
   if(cdT<=0){state='play';showCount('Go!');tone(880,.25,'triangle',.2);tone(1320,.3,'triangle',.12,0,.05);
-    toast(mode==='clean'?`Clean up ${CL.name}: swallow every piece of junk!`:mode==='solo'?`Reach size ${SOLO_GOAL}, fast!`:mode==='camp'?`${LV.name}: ${goalText(LV)}!`:`Rivals leave you alone for ${GRACE} seconds`+(nemName?`. Watch out for ${nemName}, your nemesis!`:''));}}
+    toast(mode==='clean'?`Clean up ${CL.name}! Clear each area and the job site grows`:mode==='solo'?`Reach size ${SOLO_GOAL}, fast!`:mode==='camp'?`${LV.name}: ${goalText(LV)}!`:`Rivals leave you alone for ${GRACE} seconds`+(nemName?`. Watch out for ${nemName}, your nemesis!`:''));}}
 function showCount(t){const e=$('count');e.textContent=t;e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop');}
 function setPause(on){if(on&&state==='menu')return;paused=on;$('pauseOv').hidden=!on;joy.id=null;keys={};
-  if(on)$('pauseInfo').textContent=mode==='clean'?`Time ${fmtT(time)} · ${foods.length} pieces of junk left`:mode==='solo'?`Time ${fmtT(time)} · size ${Math.round(player.r)} of ${SOLO_GOAL}`:`Size ${Math.round(player.alive?player.r:0)} · ${cats.filter(c=>c.alive).length} cats left`;}
+  if(on)$('pauseInfo').textContent=mode==='clean'?`Time ${fmtT(time)} · area ${cleanStage+1} of ${CL.stages.length} · ${cleanLeft()} pieces of junk left`:mode==='solo'?`Time ${fmtT(time)} · size ${Math.round(player.r)} of ${SOLO_GOAL}`:`Size ${Math.round(player.alive?player.r:0)} · ${cats.filter(c=>c.alive).length} cats left`;}
 function toMenu(){hideSay();ambient('none');paused=false;$('pauseOv').hidden=true;$('end').hidden=true;buildFurs();setMode(mode);$('menu').hidden=false;state='menu';document.body.classList.remove('playing');['stats','board','mini'].forEach(i=>$(i).hidden=true);}
 let errCount=0;
 let comboShown='';
 let buffShown='';
 function buffHud(){let t='';if(player&&player.alive&&player.buff)for(const k in PU)if(player.buff[k]>0)t+=`<span style="--bc:${PU[k].col}">${PU[k].n} ${Math.ceil(player.buff[k])}s</span>`;
   if(t!==buffShown){buffShown=t;$('buffs').innerHTML=t;}}
-function comboHud(){const t=combo>=3&&state==='play'&&player&&player.alive?`<b>×${comboMult().toFixed(2)}</b> combo ${combo}`:'';
+function comboHud(){const t=combo>=3&&state==='play'&&player&&player.alive?(mode==='clean'?`<b>Streak ${combo}</b> ×${comboMult().toFixed(2)} growth · −${cleanBonus.toFixed(1)}s`:`<b>×${comboMult().toFixed(2)}</b> combo ${combo}`):'';
   if(t!==comboShown){comboShown=t;const e=$('combo');e.innerHTML=t;e.classList.toggle('on',!!t);}
-  if(t)$('combo').style.opacity=String(.45+.55*Math.min(1,comboT/COMBO_WINDOW));}
+  if(t)$('combo').style.opacity=String(.45+.55*Math.min(1,comboT/(mode==='clean'?STREAK_WINDOW:COMBO_WINDOW)));}
 function loop(now){requestAnimationFrame(loop);const rdt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;clock+=rdt;
   shakeA*=Math.exp(-rdt*7);if(shakeA<.2)shakeA=0;
   const dt=slowT>0?rdt*.3:rdt;if(slowT>0)slowT-=rdt;

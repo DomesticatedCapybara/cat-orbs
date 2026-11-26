@@ -160,7 +160,7 @@ function themeBus(n){MUS.th=MUS.th||{};if(!MUS.th[n]){const g=SFX.ctx.createGain
 function themeStep(s,t,sp){const M=THEME_MUS[TH_NAME]||THEME_MUS.bay,d=themeBus(THEME_MUS[TH_NAME]?TH_NAME:'bay'),b=s%16,ch=M.prog[Math.floor(s/16)%4];M.step(d,s,t,sp,MUS.int,ch,b);}
 const campMus=()=>state!=='menu'&&THEME_MUS[TH_NAME];
 function battleTarget(){if(state==='count')return .08;if(state==='finale')return 1;if(!player)return 0;
-  if(mode==='clean')return Math.min(1,.15+.75*(1-foods.length/junkTotal(CL)));
+  if(mode==='clean')return Math.min(1,.15+.75*(1-cleanLeft()/junkTotal(CL)));
   if(mode==='solo')return Math.min(1,.15+.75*player.r/SOLO_GOAL+.1*Math.min(1,time/120));
   const tot=mode==='camp'?LV.rivals:AI_COUNT;let v=Math.pow(Math.max(0,1-(Math.min(aliveN,tot+1)-1)/tot),.8);if(finalOn)v=Math.max(v,.86);
   if(mode==='camp'&&LV.goal.type!=='win')v=Math.max(v,.9*(LV.goal.type==='size'?player.r/LV.goal.n:myCats/LV.goal.n));

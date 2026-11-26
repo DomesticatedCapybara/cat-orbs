@@ -3,7 +3,9 @@
 // The ground (roads, pavements, grass) is pre-drawn and cached. Everything standing on it
 // (bins, hydrants, trees, cars, fountains, buildings) is a prop that cats can absorb.
 const PROP_V=.3; // how much a building is worth, as a fraction of its size
-const CELL=460,ROAD=80,BLK=CELL-ROAD,BMIN=-6,BMAX=5; // city blocks -6..5 fill the square island exactly (±R0)
+const CELL=460,ROAD=80,BLK=CELL-ROAD;let BMIN=-6,BMAX=5; // city blocks -6..5 fill the square island exactly (±R0)
+// the island can be cropped: k blocks out from the middle each way (6 = the full city; Clean-up Crew jobs use smaller islands)
+function setIsland(k){BMIN=-k;BMAX=k-1;R0=k*CELL+40;}
 const ROOF=['#b85c45','#6d7a8a','#c9b48f','#4f8a8b','#8c5e7a','#d18f52','#5d6b52','#a3a7ad','#7a4b3a','#5a6f9a'];
 const CARS=['#e84a3c','#f2c14e','#3f7fd8','#f0f0f0','#2b2b2b','#3fae7a','#9b59b6'];
 const WATER='#1f4e6b';
@@ -116,7 +118,6 @@ function updateCritters(dt){
       if(near&&nd<90){const d=Math.hypot(m.x-near.x,m.y-near.y)||1;m.vx=(m.x-near.x)/d*170;m.vy=(m.y-near.y)/d*170;m.t=.4;}
       else if(m.t<=0){m.t=.8+Math.random()*1.5;const a=Math.random()*7,s=Math.random()<.3?0:55;m.vx=Math.cos(a)*s;m.vy=Math.sin(a)*s;}}
     m.x+=m.vx*dt;m.y+=m.vy*dt;const lim=R0-10;m.x=Math.max(-lim,Math.min(lim,m.x));m.y=Math.max(-lim,Math.min(lim,m.y));
-    if(mode==='clean'){const d=Math.hypot(m.x,m.y),L=arenaR-20;if(d>L){m.x*=L/d;m.y*=L/d;}} // job-site critters stay inside the fence
     if(Math.hypot(m.vx,m.vy)>3)m.a=Math.atan2(m.vy,m.vx);}}
 function buildProps(){props=[];pgrid=new Map();propEaten=[];spawnCritters();
   for(let i=BMIN;i<=BMAX;i++)for(let j=BMIN;j<=BMAX;j++)for(const p of genBlock(i,j).props){
@@ -238,7 +239,8 @@ function drawLow(){const g=lowCv.getContext('2d');g.setTransform(1,0,0,1,0,0);g.
 drawLow();
 const CH=512,chunks=new Map();let chunkPx=0,chunkFail=false;
 let CITY_TH='';
-function setCity(seed){if((seed>>>0)===CITY_SEED&&blockCache.size&&CITY_TH===TH_NAME)return;CITY_SEED=seed>>>0;CITY_TH=TH_NAME;blockCache.clear();
+let CITY_R0=0;
+function setCity(seed){if((seed>>>0)===CITY_SEED&&blockCache.size&&CITY_TH===TH_NAME&&CITY_R0===R0)return;CITY_SEED=seed>>>0;CITY_TH=TH_NAME;CITY_R0=R0;blockCache.clear();
   for(const c of chunks.values())c.width=c.height=0;chunks.clear();chunkPx=0;drawLow();}
 function getChunk(t,cx,cy,make){const key=t+':'+cx+':'+cy;let c=chunks.get(key);
   if(c){chunks.delete(key);chunks.set(key,c);return c;}if(!make)return null;
